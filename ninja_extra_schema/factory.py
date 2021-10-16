@@ -3,8 +3,8 @@ from django.db.models import Field, ManyToManyRel, ManyToOneRel, Model
 from pydantic import create_model as create_pydantic_model
 
 from ninja.errors import ConfigError
-from ninja_extra_scheme.orm.fields import get_schema_field, get_related_field_schema, construct_fields
-from ninja_extra_scheme.orm.schema import Schema
+from ninja_extra_schema.orm.fields import get_schema_field, get_related_field_schema, construct_fields
+from ninja_extra_schema.orm.schema import Schema
 from pydantic.fields import FieldInfo
 
 __all__ = ["SchemaFactory", "factory", "create_schema"]

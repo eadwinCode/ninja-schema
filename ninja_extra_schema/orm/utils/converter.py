@@ -1,25 +1,26 @@
 import datetime
 from collections import OrderedDict
 from enum import Enum
-from typing import Optional, List, TypeVar, no_type_check, Type, Tuple
+from typing import Optional, List, TypeVar, no_type_check, Type, Tuple, TYPE_CHECKING
 from uuid import UUID
 
 from ninja.openapi.schema import OpenAPISchema
-from ninja_extra.compat import ArrayField, HStoreField, RangeField, JSONField
+from ...compat import ArrayField, HStoreField, RangeField, JSONField
 from django.db import models
 from django.db.models.fields import Field
 from pydantic.fields import FieldInfo, Undefined
 from pydantic import (
     Json,
     EmailStr,
-    AnyHttpUrl,
-    AnyUrl,
-    HttpUrl,
-    FilePath,
-    IPvAnyAddress
+    AnyUrl
 )
-from ninja_extra.orm.schema_registry import SchemaRegister
+from ..schema_registry import SchemaRegister
 from .utils import import_single_dispatch
+from ..factory import SchemaFactory
+
+if TYPE_CHECKING:
+    from ..model_schema import ModelSchema
+
 
 TModel = TypeVar("TModel")
 single_dispatch = import_single_dispatch()
@@ -44,7 +45,7 @@ class FieldConversionProps:
             data["blank"] = field_options.get("blank", False)
             data["is_null"] = field_options.get("null", False)
             data["max_length"] = field_options.get("max_length")
-            data["alias"] = None
+            data.update(alias=None)
 
         if field.is_relation and hasattr(field, "get_attname"):
             data["alias"] = field.get_attname()
@@ -85,11 +86,14 @@ def create_m2m_link_type(type_: Type[TModel]) -> Type[TModel]:
 
 
 @no_type_check
-def construct_related_field_schema(field: Field, *, registry, depth: int, skip_registry=False) -> Tuple[OpenAPISchema]:
-    from ninja_extra.orm import SchemaFactory
+def construct_related_field_schema(
+        field: Field, *, registry, depth: int, skip_registry=False
+) -> Tuple[Type['ModelSchema'], FieldInfo]:
     # create a sample config and return the type
     model = field.related_model
-    schema = SchemaFactory.create_schema(model, depth=depth - 1, registry=registry, skip_registry=skip_registry)
+    schema = SchemaFactory.create_schema(
+        model, depth=depth - 1, registry=registry, skip_registry=skip_registry
+    )
     default = ...
     if not field.concrete and field.auto_created or field.null:
         default = None
@@ -176,14 +180,20 @@ def construct_field_info(python_type, field: Field, depth=0, __module__=__name__
 @convert_django_field.register(models.CharField)
 @convert_django_field.register(models.TextField)
 @convert_django_field.register(models.SlugField)
-@convert_django_field.register(models.URLField)
-@convert_django_field.register(models.EmailField)
 @convert_django_field.register(models.GenericIPAddressField)
 @convert_django_field.register(models.FileField)
 @convert_django_field.register(models.FilePathField)
 def convert_field_to_string(field: Field, **kwargs):
     return construct_field_info(str, field)
 
+@convert_django_field.register(models.EmailField)
+def convert_field_to_email_string(field: Field, **kwargs):
+    return construct_field_info(EmailStr, field)
+
+
+@convert_django_field.register(models.URLField)
+def convert_field_to_url_string(field: Field, **kwargs):
+    return construct_field_info(AnyUrl, field)
 
 @convert_django_field.register(models.AutoField)
 def convert_field_to_id(field: Field, **kwargs):
@@ -210,7 +220,7 @@ def convert_field_to_boolean(field: Field, **kwargs):
 
 
 @convert_django_field.register(models.NullBooleanField)
-def convert_field_to_nullboolean(field: Field, **kwargs):
+def convert_field_to_null_boolean(field: Field, **kwargs):
     return construct_field_info(bool, field)
 
 
@@ -237,7 +247,7 @@ def convert_time_to_string(field: Field, **kwargs):
 
 
 @convert_django_field.register(models.OneToOneRel)
-def convert_onetoone_field_to_djangomodel(field: Field, registry=None, depth=0, **kwargs):
+def convert_one_to_one_field_to_django_model(field: Field, registry=None, depth=0, **kwargs):
     return construct_relational_field_info(field, registry=registry, depth=depth)
 
 
@@ -252,7 +262,7 @@ def convert_field_to_list_or_connection(field: Field, registry=None, depth=0, sk
 
 @convert_django_field.register(models.OneToOneField)
 @convert_django_field.register(models.ForeignKey)
-def convert_field_to_djangomodel(field: Field, registry=None, depth=0, skip_registry=False, **kwargs):
+def convert_field_to_django_model(field: Field, registry=None, depth=0, skip_registry=False, **kwargs):
     if depth > 0:
         return construct_related_field_schema(field, depth=depth, registry=registry, skip_registry=skip_registry)
     return construct_relational_field_info(field, registry=registry, depth=depth)

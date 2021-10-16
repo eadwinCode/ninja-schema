@@ -1,6 +1,6 @@
 from enum import Enum
 from itertools import chain
-from typing import Optional, Union, Any, List, no_type_check, Dict, Type
+from typing import Optional, Union, Any, List, no_type_check, Dict, Type, cast, Iterator
 
 from django.core.paginator import Page
 from pydantic.class_validators import extract_root_validators
@@ -10,14 +10,12 @@ from pydantic.utils import ClassAttribute, generate_model_signature, is_valid_fi
     lenient_issubclass, ROOT_KEY, unique_list
 
 from .utils.converter import convert_django_field_with_choices
-from ninja.schema import DjangoGetter
+from .getters import DjangoGetter
 from pydantic import BaseModel, ConfigError, BaseConfig, PyObject
 from pydantic.main import ModelMetaclass, ANNOTATED_FIELD_UNTOUCHED_TYPES, validate_custom_root_type
-from django.db import models
-from django.db.models import QuerySet
-from .factory import SchemaFactory
+from django.db.models import Field, ManyToManyRel, ManyToOneRel, Model, QuerySet
 from .schema_registry import register as global_registry
-from ninja_extra.pydanticutils import compute_field_annotations
+from ..pydanticutils import compute_field_annotations
 from .model_validators import ModelValidatorGroup
 
 ALL_FIELDS = '__all__'
@@ -126,26 +124,17 @@ def update_class_missing_fields(cls, bases, namespace):
     return cls
 
 
-class ModelSchemaBuildActionEnum(Enum):
-    READ = 'read'
-    CREATE = 'create'
-
-
 class ModelSchemaConfig(BaseConfig):
     def __init__(self, options=None):
         super(ModelSchemaConfig, self).__init__()
         self.model = getattr(options, 'model', None)
-        self.build_schema_action: ModelSchemaBuildActionEnum = ModelSchemaBuildActionEnum[
-            getattr(options, 'build_schema_action', 'READ')
-        ]
         self.include = getattr(options, 'include', None) or '__all__'
         self.exclude = set(getattr(options, 'exclude', None) or ())
         self.skip_registry = getattr(options, 'skip_registry', False)
         self.registry = getattr(options, 'registry', global_registry)
         self.optional = getattr(options, 'optional', None)
-        self.write_only = set(getattr(options, 'write_only', None) or ())
-        self.read_only = set(getattr(options, 'read_only', None) or ())
         self.depth = int(getattr(options, 'depth', 0))
+        self.validate_configuration()
 
     @classmethod
     def clone_field(cls, field: FieldInfo, **kwargs) -> FieldInfo:
@@ -154,41 +143,29 @@ class ModelSchemaConfig(BaseConfig):
         new_field = FieldInfo(**field_dict)
         return new_field
 
+    def model_fields(self) -> Iterator[Field]:
+        """returns iterator with all the fields that can be part of schema"""
+        for fld in self.model._meta.get_fields():
+            if isinstance(fld, (ManyToOneRel, ManyToManyRel)):
+                # skipping relations
+                continue
+            yield cast(Field, fld)
+
     def validate_configuration(self):
         self.include = None if self.include == ALL_FIELDS else set(self.include or ())
-
-        action = getattr(self, f"_{self.build_schema_action.value}", None)
 
         if not self.model:
             raise ConfigError("Invalid Configuration. 'model' is required")
 
-        if not action:
-            raise ConfigError("Invalid Configuration. Please choosen between 'read'or 'create'")
-
         if self.include and self.exclude:
             raise ConfigError("Only one of 'include' or 'exclude' should be set in configuration.")
-
-        if self.write_only.intersection(self.read_only):
-            raise ConfigError("'write_only' and 'read_only' should not have any thing in common")
-
-    def process_build_schema_parameters(self):
-        self.validate_configuration()
-        self.read_only.add(getattr(self.model._meta.pk, 'name', getattr(self.model._meta.pk, 'attname')))
-        action = getattr(self, f"_{self.build_schema_action.value}", None)
-        action()
-
-    def _read(self):
-        self.exclude.update(self.write_only)
-
-    def _create(self):
-        self.exclude.update(self.read_only)
 
     def is_field_in_optional(self, field_name: str) -> bool:
         if not self.optional:
             return False
-        if isinstance(self.optional, (set, tuple, list)) and field_name in self.optional:
-            return True
         if self.optional == ALL_FIELDS:
+            return True
+        if isinstance(self.optional, (set, tuple, list)) and field_name in self.optional:
             return True
         return False
 
@@ -205,11 +182,10 @@ class ModelSchemaMetaclass(ModelMetaclass):
         if issubclass(cls, ModelSchema):
             config = namespace["Config"]
             config_instance = ModelSchemaConfig(config)
-            config_instance.process_build_schema_parameters()
             annotations = namespace.get("__annotations__", {})
 
             try:
-                fields = SchemaFactory.model_fields(config_instance.model)
+                fields = config_instance.model_fields()
             except AttributeError as exc:
                 raise ConfigError(f"{exc} (Is `Config.model` a valid Django model class?)")
 
@@ -266,7 +242,7 @@ class ModelSchema(BaseModel, metaclass=ModelSchemaMetaclass):
         orm_mode = True
         getter_dict = DjangoGetter
 
-    def apply(self, model_instance: models.Model, **kwargs):
+    def apply_to_model(self, model_instance: Model, **kwargs):
         for attr, value in self.dict(**kwargs).items():
             setattr(model_instance, attr, value)
         return model_instance
@@ -278,72 +254,5 @@ class ModelSchema(BaseModel, metaclass=ModelSchemaMetaclass):
                 return [cls.from_orm(model) for model in model_instance]
             raise Exception('model_instance must a queryset or list')
         return cls.from_orm(model_instance)
-
-    @classmethod
-    def _get_model_config(cls, **kwargs):
-        optional = kwargs.get('optional', getattr(cls.Config, 'optional', None))
-        include = kwargs.get('include', getattr(cls.Config, 'include', None))
-        exclude = kwargs.get('exclude', getattr(cls.Config, 'exclude', None))
-        write_only = kwargs.get('write_only', getattr(cls.Config, 'write_only', None))
-        read_only = kwargs.get('read_only', getattr(cls.Config, 'read_only', None))
-        action = kwargs.get('action')
-        skip_registry = kwargs.get('skip_registry')
-        registry = kwargs.get('registry')
-
-        attrs = dict(Config=SchemaFactory.get_model_config(
-            optional=optional, include=include, exclude=exclude, write_only=write_only,
-            read_only=read_only, action=action, skip_registry=skip_registry, registry=registry
-        ))
-        return attrs
-
-    @classmethod
-    def _build_new_schema(cls, *, name, action, registry, **kwargs):
-        skip_registry = kwargs.get('skip_registry', False)
-        attrs = cls._get_model_config(
-            **kwargs, action=action, skip_registry=skip_registry, registry=registry
-        )
-
-        new_schema = type(name, (ModelSchema,), attrs)
-        if not skip_registry:
-            registry.register_schema(name, new_schema)
-        return new_schema
-
-    @classmethod
-    def get_create_schema(cls, *, name=None, **kwargs):
-        action = kwargs.get('action', 'create')
-        name = name or f"{action.capitalize()}{cls.Config.model.name}Schema"
-
-        registry = kwargs.get('registry', getattr(cls.Config, 'registry', global_registry))
-        schema = registry.get_schema(name=name)
-        if schema:
-            return schema
-
-        return cls._build_new_schema(name=name, action=action, registry=registry, **kwargs)
-
-    @classmethod
-    def get_update_schema(cls, *, name=None, **kwargs):
-        action = kwargs.get('action', 'create')
-        name = name or f"{action.capitalize()}{cls.Config.model.name}Schema"
-
-        registry = kwargs.get('registry', getattr(cls.Config, 'registry', global_registry))
-        schema = registry.get_schema(name=name)
-        if schema:
-            return schema
-
-        return cls._build_new_schema(name=name, action=action, registry=registry, **kwargs)
-
-    @classmethod
-    def get_patch_schema(cls,  *, name=None, **kwargs):
-        action = kwargs.get('action', 'create')
-        name = name or f"{action.capitalize()}{cls.Config.model.name}Schema"
-
-        registry = kwargs.get('registry', getattr(cls.Config, 'registry', global_registry))
-        schema = registry.get_schema(name=name)
-        if schema:
-            return schema
-        optional = ALL_FIELDS
-
-        kwargs.setdefault('optional', optional)
-        return cls._build_new_schema(name=name, action=action, registry=registry, **kwargs)
 
 # create a class APIModelSchema whose purpose to create ModelSchema during API route creation

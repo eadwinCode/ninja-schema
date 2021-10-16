@@ -1,9 +1,11 @@
-from typing import Dict, Tuple, Type
+from typing import Dict, Tuple, Type, TYPE_CHECKING, Union
 from django.db.models import Model
 from django.db.models.fields import Field as DjangoField
 from pydantic.fields import FieldInfo
 
 from .schema import Schema
+if TYPE_CHECKING:
+    from .model_schema import ModelSchema
 
 __all__ = ["SchemaRegister", "register"]
 
@@ -16,15 +18,15 @@ class SchemaRegisterBorg:
 
 
 class SchemaRegister(SchemaRegisterBorg):
-    types: Dict[str, Dict[str, Type[Schema]]]
+    schemas: Dict[str, Union[Type['ModelSchema'], Type[Schema]]]
+    fields: Dict[str, Tuple]
 
     def __init__(self):
         SchemaRegisterBorg.__init__(self)
         if not hasattr(self, 'schemas'):
-            # TODO: register Django UserModel
-            self._shared_state.update(types=dict(schemas={}, fields={}))
+            self._shared_state.update(schemas={}, fields={})
 
-    def register_model(self, model: Model, schema: Type[Schema]):
+    def register_model(self, model: Type[Model], schema: Type['ModelSchema']):
         from .model_schema import ModelSchema
         assert issubclass(schema, (ModelSchema,)), (
             "Only Schema can be"
@@ -34,14 +36,14 @@ class SchemaRegister(SchemaRegisterBorg):
             "Only Django Models are allowed. {}".format(model.__name__)
         )
         # TODO: register model as module_name.model_name
-        self.register_schema(model, schema)
+        self.register_schema(str(model), schema)
 
-    def register_schema(self, name: str, schema: Type[Schema]):
-        self.types['schemas'][name] = schema
+    def register_schema(self, name: str, schema: Union[Type['ModelSchema'], Type[Schema]]):
+        self.schemas[name] = schema
 
     def get_converted_field(self, field: DjangoField):
-        if field in self.types['fields']:
-            return self.types['fields'][field]
+        if str(field) in self.fields:
+            return self.fields[str(field)]
         return None
 
     def register_converted_field(self, field: DjangoField, value: Tuple):
@@ -51,14 +53,14 @@ class SchemaRegister(SchemaRegisterBorg):
         assert isinstance(value, tuple) and isinstance(value[1], FieldInfo), (
             "Value must be a tuple of (type, FieldInfo)"
         )
-        self.types['fields'][field] = value
+        self.fields[str(field)] = value
 
     def get_model_schema(self, model):
         return self.get_schema(model)
 
     def get_schema(self, name):
-        if name in self.types['schemas']:
-            return self.types['schemas'][name]
+        if name in self.schemas:
+            return self.schemas[name]
         return None
 
 
