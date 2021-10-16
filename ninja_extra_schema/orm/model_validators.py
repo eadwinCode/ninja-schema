@@ -1,23 +1,28 @@
-import warnings
 from itertools import chain
 from types import FunctionType
-from typing import Callable, Any
+from typing import Any, Callable
+
 from pydantic import ConfigError
-from pydantic.class_validators import VALIDATOR_CONFIG_KEY, Validator, ValidatorGroup, _prepare_validator
+from pydantic.class_validators import (
+    VALIDATOR_CONFIG_KEY,
+    Validator,
+    ValidatorGroup,
+    _prepare_validator,
+)
 from pydantic.typing import AnyCallable
 
-__all__ = ['model_validator', 'ModelValidatorGroup']
+__all__ = ["model_validator", "ModelValidatorGroup"]
 
 
 class ModelValidator:
     @classmethod
     def model_validator(
-            cls,
-            *fields: str,
-            pre: bool = False,
-            each_item: bool = False,
-            always: bool = False,
-            check_fields: bool = False,
+        cls,
+        *fields: str,
+        pre: bool = False,
+        each_item: bool = False,
+        always: bool = False,
+        check_fields: bool = False,
     ) -> Callable[[AnyCallable], classmethod]:
         """
         Decorate methods on the class indicating that they should be used to validate fields
@@ -29,7 +34,7 @@ class ModelValidator:
         :param check_fields: whether to check that the fields actually exist on the model
         """
         if not fields:
-            raise ConfigError('validator with no fields specified')
+            raise ConfigError("validator with no fields specified")
         elif isinstance(fields[0], FunctionType):
             raise ConfigError(
                 "validators should be used with fields and keyword arguments, not bare. "  # noqa: Q000
@@ -43,7 +48,13 @@ class ModelValidator:
                 VALIDATOR_CONFIG_KEY,
                 (
                     fields,
-                    Validator(func=f_cls.__func__, pre=pre, each_item=each_item, always=always, check_fields=check_fields),
+                    Validator(
+                        func=f_cls.__func__,
+                        pre=pre,
+                        each_item=each_item,
+                        always=always,
+                        check_fields=check_fields,
+                    ),
                 ),
             )
             return f_cls
@@ -63,7 +74,7 @@ class ModelValidatorGroup(ValidatorGroup):
             )
         )
         if unused_validators:
-            fn = ', '.join(unused_validators)
+            fn = ", ".join(unused_validators)
             raise ConfigError(
                 f"Validators defined with incorrect fields: {fn} "  # noqa: Q000
                 f"(use check_fields=False if you're inheriting from the model and intended this)"

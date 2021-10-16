@@ -1,32 +1,53 @@
 from enum import Enum
 from itertools import chain
-from typing import Optional, Union, Any, List, no_type_check, Dict, Type, cast, Iterator
+from typing import Any, Dict, Iterator, List, Optional, Type, Union, cast, no_type_check
 
 from django.core.paginator import Page
-from pydantic.class_validators import extract_root_validators
-from pydantic.fields import ModelField, Undefined, FieldInfo
-from pydantic.typing import resolve_annotations, get_origin, get_args
-from pydantic.utils import ClassAttribute, generate_model_signature, is_valid_field, validate_field_name, \
-    lenient_issubclass, ROOT_KEY, unique_list
-
-from .utils.converter import convert_django_field_with_choices
-from .getters import DjangoGetter
-from pydantic import BaseModel, ConfigError, BaseConfig, PyObject
-from pydantic.main import ModelMetaclass, ANNOTATED_FIELD_UNTOUCHED_TYPES, validate_custom_root_type
 from django.db.models import Field, ManyToManyRel, ManyToOneRel, Model, QuerySet
-from .schema_registry import register as global_registry
+from pydantic import BaseConfig, BaseModel, ConfigError, PyObject
+from pydantic.class_validators import extract_root_validators
+from pydantic.fields import FieldInfo, ModelField, Undefined
+from pydantic.main import (
+    ANNOTATED_FIELD_UNTOUCHED_TYPES,
+    ModelMetaclass,
+    validate_custom_root_type,
+)
+from pydantic.typing import get_args, get_origin, resolve_annotations
+from pydantic.utils import (
+    ROOT_KEY,
+    ClassAttribute,
+    generate_model_signature,
+    is_valid_field,
+    lenient_issubclass,
+    unique_list,
+    validate_field_name,
+)
+
 from ..pydanticutils import compute_field_annotations
+from .getters import DjangoGetter
 from .model_validators import ModelValidatorGroup
+from .schema_registry import register as global_registry
+from .utils.converter import convert_django_field_with_choices
 
-ALL_FIELDS = '__all__'
+ALL_FIELDS = "__all__"
 
-__all__ = ['ModelSchema']
+__all__ = ["ModelSchema"]
 
 
 namespace_keys = [
-    "__config__", "__fields__", "__validators__", "__pre_root_validators__", "__post_root_validators__",
-    "__schema_cache__", "__json_encoder__", "__custom_root_type__", "__private_attributes__",
-    "__slots__", "__hash__", "__class_vars__", '__annotations__'
+    "__config__",
+    "__fields__",
+    "__validators__",
+    "__pre_root_validators__",
+    "__post_root_validators__",
+    "__schema_cache__",
+    "__json_encoder__",
+    "__custom_root_type__",
+    "__private_attributes__",
+    "__slots__",
+    "__hash__",
+    "__class_vars__",
+    "__annotations__",
 ]
 
 
@@ -55,10 +76,15 @@ def update_class_missing_fields(cls, bases, namespace):
     untouched_types = ANNOTATED_FIELD_UNTOUCHED_TYPES
 
     def is_untouched(v: Any) -> bool:
-        return isinstance(v, untouched_types) or v.__class__.__name__ == 'cython_function_or_method'
+        return (
+            isinstance(v, untouched_types)
+            or v.__class__.__name__ == "cython_function_or_method"
+        )
 
     vg = ModelValidatorGroup(old_namespace.__validators__)
-    new_annotations = resolve_annotations(namespace.get('__annotations__') or {}, getattr(cls, '__module__', None))
+    new_annotations = resolve_annotations(
+        namespace.get("__annotations__") or {}, getattr(cls, "__module__", None)
+    )
     # annotation only fields need to come first in fields
     class_vars = old_namespace.__class_vars__
 
@@ -66,11 +92,16 @@ def update_class_missing_fields(cls, bases, namespace):
         if is_valid_field(ann_name):
             validate_field_name(bases, ann_name)
             value = namespace.get(ann_name, Undefined)
-            allowed_types = get_args(ann_type) if get_origin(ann_type) is Union else (ann_type,)
+            allowed_types = (
+                get_args(ann_type) if get_origin(ann_type) is Union else (ann_type,)
+            )
             if (
-                    is_untouched(value)
-                    and ann_type != PyObject
-                    and not any(lenient_issubclass(get_origin(allowed_type), Type) for allowed_type in allowed_types)
+                is_untouched(value)
+                and ann_type != PyObject
+                and not any(
+                    lenient_issubclass(get_origin(allowed_type), Type)
+                    for allowed_type in allowed_types
+                )
             ):
                 continue
             fields[ann_name] = ModelField.infer(
@@ -83,7 +114,11 @@ def update_class_missing_fields(cls, bases, namespace):
 
     for var_name, value in namespace.items():
         can_be_changed = var_name not in class_vars and not is_untouched(value)
-        if is_valid_field(var_name) and var_name not in new_annotations and can_be_changed:
+        if (
+            is_valid_field(var_name)
+            and var_name not in new_annotations
+            and can_be_changed
+        ):
             validate_field_name(bases, var_name)
             inferred = ModelField.infer(
                 name=var_name,
@@ -94,8 +129,8 @@ def update_class_missing_fields(cls, bases, namespace):
             )
             if var_name in fields and inferred.type_ != fields[var_name].type_:
                 raise TypeError(
-                    f'The type of {cls.__name__}.{var_name} differs from the new default value; '
-                    f'if you wish to change the type of this field, please use a type annotation'
+                    f"The type of {cls.__name__}.{var_name} differs from the new default value; "
+                    f"if you wish to change the type of this field, please use a type annotation"
                 )
             fields[var_name] = inferred
 
@@ -108,33 +143,47 @@ def update_class_missing_fields(cls, bases, namespace):
     pre_rv_new, post_rv_new = extract_root_validators(namespace)
 
     new_namespace = {
-        '__annotations__': old_namespace.__annotations__,
-        '__config__': config,
-        '__fields__': fields,
-        '__validators__': vg.validators,
-        '__pre_root_validators__': unique_list(old_namespace.__pre_root_validators__ + pre_rv_new),
-        '__post_root_validators__': unique_list(old_namespace.__post_root_validators__ + post_rv_new),
-        '__class_vars__': class_vars,
+        "__annotations__": old_namespace.__annotations__,
+        "__config__": config,
+        "__fields__": fields,
+        "__validators__": vg.validators,
+        "__pre_root_validators__": unique_list(
+            old_namespace.__pre_root_validators__ + pre_rv_new
+        ),
+        "__post_root_validators__": unique_list(
+            old_namespace.__post_root_validators__ + post_rv_new
+        ),
+        "__class_vars__": class_vars,
     }
     for k, v in new_namespace.items():
         if hasattr(cls, k):
             setattr(cls, k, v)
     # set __signature__ attr only for model class, but not for its instances
-    cls.__signature__ = ClassAttribute('__signature__', generate_model_signature(cls.__init__, fields, config))
+    cls.__signature__ = ClassAttribute(
+        "__signature__", generate_model_signature(cls.__init__, fields, config)
+    )
     return cls
 
 
 class ModelSchemaConfig(BaseConfig):
-    def __init__(self, options=None):
+    def __init__(
+        self, schema_class_name: str, options: Optional[Dict[str, Any]] = None
+    ):
         super(ModelSchemaConfig, self).__init__()
-        self.model = getattr(options, 'model', None)
-        self.include = getattr(options, 'include', None) or '__all__'
-        self.exclude = set(getattr(options, 'exclude', None) or ())
-        self.skip_registry = getattr(options, 'skip_registry', False)
-        self.registry = getattr(options, 'registry', global_registry)
-        self.optional = getattr(options, 'optional', None)
-        self.depth = int(getattr(options, 'depth', 0))
+        self.model = getattr(options, "model", None)
+        _include = getattr(options, "include", None)
+        self.include = set() if _include == ALL_FIELDS else set(_include or ())
+        self.exclude = set(getattr(options, "exclude", None) or ())
+        self.skip_registry = getattr(options, "skip_registry", False)
+        self.registry = getattr(options, "registry", global_registry)
+        _optional = getattr(options, "optional", None)
+        self.optional = (
+            set(ALL_FIELDS) if _optional == ALL_FIELDS else set(_optional or ())
+        )
+        self.depth = int(getattr(options, "depth", 0))
+        self.schema_class_name = schema_class_name
         self.validate_configuration()
+        self.process_build_schema_parameters()
 
     @classmethod
     def clone_field(cls, field: FieldInfo, **kwargs) -> FieldInfo:
@@ -152,45 +201,73 @@ class ModelSchemaConfig(BaseConfig):
             yield cast(Field, fld)
 
     def validate_configuration(self):
-        self.include = None if self.include == ALL_FIELDS else set(self.include or ())
+        self.include = set() if self.include == ALL_FIELDS else set(self.include or ())
 
         if not self.model:
             raise ConfigError("Invalid Configuration. 'model' is required")
 
         if self.include and self.exclude:
-            raise ConfigError("Only one of 'include' or 'exclude' should be set in configuration.")
+            raise ConfigError(
+                "Only one of 'include' or 'exclude' should be set in configuration."
+            )
 
     def is_field_in_optional(self, field_name: str) -> bool:
         if not self.optional:
             return False
-        if self.optional == ALL_FIELDS:
+        if ALL_FIELDS in self.optional:
             return True
-        if isinstance(self.optional, (set, tuple, list)) and field_name in self.optional:
+        if (
+            isinstance(self.optional, (set, tuple, list))
+            and field_name in self.optional
+        ):
             return True
         return False
+
+    def process_build_schema_parameters(self):
+        model_pk = getattr(
+            self.model._meta.pk, "name", getattr(self.model._meta.pk, "attname")
+        )
+        if (
+            model_pk not in self.include
+            or model_pk not in self.exclude
+            and ALL_FIELDS not in self.optional
+        ):
+            self.optional.add(model_pk)
 
 
 class ModelSchemaMetaclass(ModelMetaclass):
     @no_type_check
     def __new__(
-            mcs, name: str, bases: tuple, namespace: dict,
+        mcs,
+        name: str,
+        bases: tuple,
+        namespace: dict,
     ):
         cls = super().__new__(mcs, name, bases, namespace)
-        if bases == (BaseModel,) or not namespace.get('Config'):
+        if bases == (BaseModel,) or not namespace.get("Config"):
             return cls
 
         if issubclass(cls, ModelSchema):
             config = namespace["Config"]
-            config_instance = ModelSchemaConfig(config)
+            config_instance = ModelSchemaConfig(name, config)
             annotations = namespace.get("__annotations__", {})
 
             try:
                 fields = config_instance.model_fields()
             except AttributeError as exc:
-                raise ConfigError(f"{exc} (Is `Config.model` a valid Django model class?)")
+                raise ConfigError(
+                    f"{exc} (Is `Config.model` a valid Django model class?)"
+                )
 
             field_values = {}
             _seen = set()
+
+            all_fields = {f.name: f for f in fields}
+            invalid_fields = (
+                set(config_instance.include or []) | set(config_instance.exclude or [])
+            ) - all_fields.keys()
+            if invalid_fields:
+                raise ConfigError(f"Field(s) {invalid_fields} are not in model.")
 
             for field in chain(fields, annotations.copy()):
                 field_name = getattr(
@@ -198,9 +275,15 @@ class ModelSchemaMetaclass(ModelMetaclass):
                 )
 
                 if (
-                        field_name in _seen
-                        or (config_instance.include and field_name not in config_instance.include)
-                        or (config_instance.exclude and field_name in config_instance.exclude)
+                    field_name in _seen
+                    or (
+                        config_instance.include
+                        and field_name not in config_instance.include
+                    )
+                    or (
+                        config_instance.exclude
+                        and field_name in config_instance.exclude
+                    )
                 ):
                     continue
 
@@ -210,8 +293,8 @@ class ModelSchemaMetaclass(ModelMetaclass):
                     python_type = annotations.pop(field_name)
                     pydantic_field = namespace[field_name]
                     if (
-                            hasattr(pydantic_field, "default_factory")
-                            and pydantic_field.default_factory
+                        hasattr(pydantic_field, "default_factory")
+                        and pydantic_field.default_factory
                     ):
                         pydantic_field = pydantic_field.default_factory()
 
@@ -223,16 +306,22 @@ class ModelSchemaMetaclass(ModelMetaclass):
 
                 else:
                     python_type, pydantic_field = convert_django_field_with_choices(
-                        field, registry=config_instance.registry, depth=config_instance.depth,
-                        skip_registry=config_instance.skip_registry
+                        field,
+                        registry=config_instance.registry,
+                        depth=config_instance.depth,
+                        skip_registry=config_instance.skip_registry,
                     )
                     if config_instance.is_field_in_optional(field_name):
-                        pydantic_field = ModelSchemaConfig.clone_field(field=pydantic_field, default=None)
+                        pydantic_field = ModelSchemaConfig.clone_field(
+                            field=pydantic_field, default=None
+                        )
 
                 field_values[field_name] = (python_type, pydantic_field)
 
             cls.__doc__ = namespace.get("__doc__", config_instance.model.__doc__)
-            cls = update_class_missing_fields(cls, bases, compute_field_annotations(namespace, **field_values))
+            cls = update_class_missing_fields(
+                cls, bases, compute_field_annotations(namespace, **field_values)
+            )
             return cls
         return cls
 
@@ -252,7 +341,8 @@ class ModelSchema(BaseModel, metaclass=ModelSchemaMetaclass):
         if many:
             if isinstance(model_instance, (QuerySet, list, Page)):
                 return [cls.from_orm(model) for model in model_instance]
-            raise Exception('model_instance must a queryset or list')
+            raise Exception("model_instance must a queryset or list")
         return cls.from_orm(model_instance)
+
 
 # create a class APIModelSchema whose purpose to create ModelSchema during API route creation
