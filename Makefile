@@ -14,17 +14,21 @@ install: ## Install dependencies
 	flit install --deps develop --symlink
 
 lint: ## Run code linters
-	black --check ninja_extra_schema tests
-	isort --check ninja_extra_schema tests
-	flake8 ninja_extra_schema tests
-	mypy ninja_extra_schemaa
+	make clean
+	black --check ninja_schema tests
+	isort --check ninja_schema tests
+	flake8 ninja_schema tests
+	mypy  ninja_schema
 
 fmt format: ## Run code formatters
-	black ninja_extra_schema tests
-	isort ninja_extra_schema tests
+	make clean
+	black ninja_schema tests
+	isort ninja_schema tests
 
 test: ## Run tests
+	make clean
 	pytest .
 
 test-cov: ## Run tests with coverage
-	pytest --cov=ninja_extra --cov-report term-missing tests
+	make clean
+	pytest --cov=ninja_schema --cov-report term-missing tests

@@ -13,7 +13,7 @@ class Event(models.Model):
         Category, null=True, blank=True, on_delete=models.SET_NULL
     )
     start_date = models.DateField(auto_now=True)
-    end_date = models.DateField()
+    end_date = models.DateField(auto_now_add=True)
 
     def __str__(self):
         return self.title

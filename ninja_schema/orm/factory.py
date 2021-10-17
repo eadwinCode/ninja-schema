@@ -1,9 +1,9 @@
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, List, Optional, Type, cast
 
 from django.db.models import Model
 from ninja.errors import ConfigError
 
-from .schema_registry import SchemaRegister
+from .schema_registry import SchemaRegister, register
 
 if TYPE_CHECKING:
     from .model_schema import ModelSchema
@@ -28,7 +28,7 @@ class SchemaFactory:
         cls,
         model: Type[Model],
         *,
-        registry: SchemaRegister,
+        registry: SchemaRegister = register,
         name: str = "",
         depth: int = 0,
         fields: Optional[List[str]] = None,

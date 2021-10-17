@@ -1,9 +1,7 @@
-from enum import Enum
 from itertools import chain
-from typing import Any, Dict, Iterator, List, Optional, Type, Union, cast, no_type_check
+from typing import Any, Dict, Iterator, Optional, Type, Union, cast, no_type_check
 
-from django.core.paginator import Page
-from django.db.models import Field, ManyToManyRel, ManyToOneRel, Model, QuerySet
+from django.db.models import Field, ManyToManyRel, ManyToOneRel
 from pydantic import BaseConfig, BaseModel, ConfigError, PyObject
 from pydantic.class_validators import extract_root_validators
 from pydantic.fields import FieldInfo, ModelField, Undefined
@@ -25,6 +23,7 @@ from pydantic.utils import (
 
 from ..pydanticutils import compute_field_annotations
 from .getters import DjangoGetter
+from .mixins import SchemaMixins
 from .model_validators import ModelValidatorGroup
 from .schema_registry import register as global_registry
 from .utils.converter import convert_django_field_with_choices
@@ -75,10 +74,10 @@ def update_class_missing_fields(cls, bases, namespace):
 
     untouched_types = ANNOTATED_FIELD_UNTOUCHED_TYPES
 
-    def is_untouched(v: Any) -> bool:
+    def is_untouched(value: Any) -> bool:
         return (
-            isinstance(v, untouched_types)
-            or v.__class__.__name__ == "cython_function_or_method"
+            isinstance(value, untouched_types)
+            or value.__class__.__name__ == "cython_function_or_method"
         )
 
     vg = ModelValidatorGroup(old_namespace.__validators__)
@@ -171,14 +170,14 @@ class ModelSchemaConfig(BaseConfig):
     ):
         super(ModelSchemaConfig, self).__init__()
         self.model = getattr(options, "model", None)
-        _include = getattr(options, "include", None)
+        _include = getattr(options, "include", None) or ALL_FIELDS
         self.include = set() if _include == ALL_FIELDS else set(_include or ())
         self.exclude = set(getattr(options, "exclude", None) or ())
         self.skip_registry = getattr(options, "skip_registry", False)
         self.registry = getattr(options, "registry", global_registry)
         _optional = getattr(options, "optional", None)
         self.optional = (
-            set(ALL_FIELDS) if _optional == ALL_FIELDS else set(_optional or ())
+            {ALL_FIELDS} if _optional == ALL_FIELDS else set(_optional or ())
         )
         self.depth = int(getattr(options, "depth", 0))
         self.schema_class_name = schema_class_name
@@ -211,6 +210,22 @@ class ModelSchemaConfig(BaseConfig):
                 "Only one of 'include' or 'exclude' should be set in configuration."
             )
 
+    def check_invalid_keys(self, **field_names: Dict[str, Any]):
+        keys = field_names.keys()
+        invalid_include_exclude_fields = (
+            set(self.include or []) | set(self.exclude or [])
+        ) - keys
+        if invalid_include_exclude_fields:
+            raise ConfigError(
+                f"Field(s) {invalid_include_exclude_fields} are not in model."
+            )
+        if ALL_FIELDS not in self.optional:
+            invalid_options_fields = set(self.optional) - keys
+            if invalid_options_fields:
+                raise ConfigError(
+                    f"Field(s) {invalid_options_fields} are not in model."
+                )
+
     def is_field_in_optional(self, field_name: str) -> bool:
         if not self.optional:
             return False
@@ -229,7 +244,7 @@ class ModelSchemaConfig(BaseConfig):
         )
         if (
             model_pk not in self.include
-            or model_pk not in self.exclude
+            and model_pk not in self.exclude
             and ALL_FIELDS not in self.optional
         ):
             self.optional.add(model_pk)
@@ -244,7 +259,7 @@ class ModelSchemaMetaclass(ModelMetaclass):
         namespace: dict,
     ):
         cls = super().__new__(mcs, name, bases, namespace)
-        if bases == (BaseModel,) or not namespace.get("Config"):
+        if bases == (SchemaBaseModel,) or not namespace.get("Config"):
             return cls
 
         if issubclass(cls, ModelSchema):
@@ -253,21 +268,16 @@ class ModelSchemaMetaclass(ModelMetaclass):
             annotations = namespace.get("__annotations__", {})
 
             try:
-                fields = config_instance.model_fields()
+                fields = list(config_instance.model_fields())
             except AttributeError as exc:
                 raise ConfigError(
                     f"{exc} (Is `Config.model` a valid Django model class?)"
                 )
 
-            field_values = {}
-            _seen = set()
+            field_values, _seen = {}, set()
 
             all_fields = {f.name: f for f in fields}
-            invalid_fields = (
-                set(config_instance.include or []) | set(config_instance.exclude or [])
-            ) - all_fields.keys()
-            if invalid_fields:
-                raise ConfigError(f"Field(s) {invalid_fields} are not in model.")
+            config_instance.check_invalid_keys(**all_fields)
 
             for field in chain(fields, annotations.copy()):
                 field_name = getattr(
@@ -277,13 +287,16 @@ class ModelSchemaMetaclass(ModelMetaclass):
                 if (
                     field_name in _seen
                     or (
-                        config_instance.include
-                        and field_name not in config_instance.include
+                        (
+                            config_instance.include
+                            and field_name not in config_instance.include
+                        )
+                        or (
+                            config_instance.exclude
+                            and field_name in config_instance.exclude
+                        )
                     )
-                    or (
-                        config_instance.exclude
-                        and field_name in config_instance.exclude
-                    )
+                    and field_name not in annotations
                 ):
                     continue
 
@@ -326,23 +339,14 @@ class ModelSchemaMetaclass(ModelMetaclass):
         return cls
 
 
-class ModelSchema(BaseModel, metaclass=ModelSchemaMetaclass):
+class SchemaBaseModel(BaseModel, SchemaMixins):
+    pass
+
+
+class ModelSchema(SchemaBaseModel, metaclass=ModelSchemaMetaclass):
     class Config:
         orm_mode = True
         getter_dict = DjangoGetter
-
-    def apply_to_model(self, model_instance: Model, **kwargs):
-        for attr, value in self.dict(**kwargs).items():
-            setattr(model_instance, attr, value)
-        return model_instance
-
-    @classmethod
-    def from_django(cls, model_instance, many=False):
-        if many:
-            if isinstance(model_instance, (QuerySet, list, Page)):
-                return [cls.from_orm(model) for model in model_instance]
-            raise Exception("model_instance must a queryset or list")
-        return cls.from_orm(model_instance)
 
 
 # create a class APIModelSchema whose purpose to create ModelSchema during API route creation

@@ -1,12 +1,10 @@
 import datetime
-from collections import OrderedDict
 from enum import Enum
 from typing import TYPE_CHECKING, List, Optional, Tuple, Type, TypeVar, no_type_check
 from uuid import UUID
 
 from django.db import models
 from django.db.models.fields import Field
-from ninja.openapi.schema import OpenAPISchema
 from pydantic import AnyUrl, EmailStr, Json
 from pydantic.fields import FieldInfo, Undefined
 

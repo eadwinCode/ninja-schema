@@ -6,7 +6,11 @@ from django.db.models import Model
 
 
 def is_valid_django_model(model: Type[Model]) -> bool:
-    return inspect.isclass(model) and issubclass(model, models.Model)
+    return is_valid_class(model) and issubclass(model, models.Model)
+
+
+def is_valid_class(klass: type) -> bool:
+    return inspect.isclass(klass)
 
 
 def import_single_dispatch() -> Optional[Any]:

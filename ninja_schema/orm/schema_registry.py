@@ -5,6 +5,7 @@ from django.db.models.fields import Field as DjangoField
 from pydantic.fields import FieldInfo
 
 from .schema import Schema
+from .utils.utils import is_valid_class, is_valid_django_model
 
 if TYPE_CHECKING:
     from .model_schema import ModelSchema
@@ -31,12 +32,12 @@ class SchemaRegister(SchemaRegisterBorg):
     def register_model(self, model: Type[Model], schema: Type["ModelSchema"]):
         from .model_schema import ModelSchema
 
-        assert issubclass(
+        assert is_valid_class(schema) and issubclass(
             schema, (ModelSchema,)
         ), "Only Schema can be" 'registered, received "{}"'.format(schema.__name__)
-        assert issubclass(model, (Model,)), "Only Django Models are allowed. {}".format(
-            model.__name__
-        )
+        assert is_valid_django_model(
+            model
+        ), "Only Django Models are allowed. {}".format(model.__name__)
         # TODO: register model as module_name.model_name
         self.register_schema(str(model), schema)
 
