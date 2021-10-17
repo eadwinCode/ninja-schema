@@ -3,8 +3,8 @@ requires = ["flit_core >=2,<4"]
 build-backend = "flit_core.buildapi"
 
 [tool.flit.metadata]
-module = "ninja_extra_schema"
-dist-name = "django-ninja-extra-schema"
+module = "ninja_schema"
+dist-name = "django-ninja-schema"
 author = "Ezeudoh Tochukwu"
 author-email = "tochukwu.ezeudoh@gmail.com"
 home-page = "https://github.com/eadwinCode/django-ninja-extra-schema"
