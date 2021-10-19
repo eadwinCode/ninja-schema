@@ -23,7 +23,7 @@ jobs:
       - name: Install core
         run: pip install "Django${{ matrix.django-version }}" pydantic
       - name: Install tests
-        run: pip install pytest pytest-asyncio pytest-django injector django-ninja
+        run: pip install pytest pytest-django
       - name: Test
         run: pytest
   codestyle:
@@ -34,7 +34,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v1
         with:
-          python-version: 3.9
+          python-version: 3.8
       - name: Install Flit
         run: pip install flit
       - name: Install Dependencies
