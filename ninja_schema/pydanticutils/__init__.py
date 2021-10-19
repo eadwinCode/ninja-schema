@@ -1,8 +1,9 @@
 import warnings
 from typing import TYPE_CHECKING, Any
 
-from pydantic import ConfigError
 from pydantic.utils import is_valid_field
+
+from ..errors import ConfigError
 
 if TYPE_CHECKING:
     from pydantic.typing import DictStrAny

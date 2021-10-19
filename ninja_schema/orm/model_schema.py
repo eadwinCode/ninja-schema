@@ -1,8 +1,19 @@
 from itertools import chain
-from typing import Any, Dict, Iterator, Optional, Type, Union, cast, no_type_check
+from typing import (
+    Any,
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    Set,
+    Type,
+    Union,
+    cast,
+    no_type_check,
+)
 
 from django.db.models import Field, ManyToManyRel, ManyToOneRel
-from pydantic import BaseConfig, BaseModel, ConfigError, PyObject
+from pydantic import BaseConfig, BaseModel, PyObject
 from pydantic.class_validators import extract_root_validators
 from pydantic.fields import FieldInfo, ModelField, Undefined
 from pydantic.main import (
@@ -21,11 +32,12 @@ from pydantic.utils import (
     validate_field_name,
 )
 
+from ..errors import ConfigError
 from ..pydanticutils import compute_field_annotations
 from .getters import DjangoGetter
 from .mixins import SchemaMixins
 from .model_validators import ModelValidatorGroup
-from .schema_registry import register as global_registry
+from .schema_registry import registry as global_registry
 from .utils.converter import convert_django_field_with_choices
 
 ALL_FIELDS = "__all__"
@@ -51,26 +63,28 @@ namespace_keys = [
 
 
 class PydanticNamespace:
-    __annotations__ = dict()
-    __config__ = None
-    __fields__ = dict()
-    __validators__ = ModelValidatorGroup({})
-    __pre_root_validators__ = []
-    __post_root_validators__ = []
+    __annotations__: Dict = dict()
+    __config__: Optional[Type[BaseConfig]] = None
+    __fields__: Dict[str, ModelField] = dict()
+    __validators__: ModelValidatorGroup = ModelValidatorGroup({})
+    __pre_root_validators__: List = []
+    __post_root_validators__: List = []
     __custom_root_type__ = None
     __private_attributes__ = None
-    __class_vars__ = set()
+    __class_vars__: Set = set()
 
-    def __init__(self, cls):
+    def __init__(self, cls: Type):
         for key in namespace_keys:
             value = getattr(cls, key, getattr(self, key, None))
             setattr(self, key, value)
 
 
-def update_class_missing_fields(cls, bases, namespace):
-    old_namespace = PydanticNamespace(cls)
-    fields: Dict[str, ModelField] = old_namespace.__fields__ or {}
-    config = old_namespace.__config__
+def update_class_missing_fields(
+    cls: Type, bases: List[Type[BaseModel]], namespace: Dict
+) -> Type[BaseModel]:
+    old_namespace: PydanticNamespace = PydanticNamespace(cls)
+    fields = old_namespace.__fields__ or {}
+    config: Type[BaseConfig] = cast(Type[BaseConfig], old_namespace.__config__)
 
     untouched_types = ANNOTATED_FIELD_UNTOUCHED_TYPES
 
@@ -80,7 +94,7 @@ def update_class_missing_fields(cls, bases, namespace):
             or value.__class__.__name__ == "cython_function_or_method"
         )
 
-    vg = ModelValidatorGroup(old_namespace.__validators__)
+    vg = ModelValidatorGroup(old_namespace.__validators__)  # type: ignore
     new_annotations = resolve_annotations(
         namespace.get("__annotations__") or {}, getattr(cls, "__module__", None)
     )
@@ -98,7 +112,7 @@ def update_class_missing_fields(cls, bases, namespace):
                 is_untouched(value)
                 and ann_type != PyObject
                 and not any(
-                    lenient_issubclass(get_origin(allowed_type), Type)
+                    lenient_issubclass(get_origin(allowed_type), Type)  # type: ignore
                     for allowed_type in allowed_types
                 )
             ):
@@ -185,10 +199,10 @@ class ModelSchemaConfig(BaseConfig):
         self.process_build_schema_parameters()
 
     @classmethod
-    def clone_field(cls, field: FieldInfo, **kwargs) -> FieldInfo:
+    def clone_field(cls, field: FieldInfo, **kwargs: Dict) -> FieldInfo:
         field_dict = dict(field.__repr_args__())
         field_dict.update(**kwargs)
-        new_field = FieldInfo(**field_dict)
+        new_field = FieldInfo(**field_dict)  # type: ignore
         return new_field
 
     def model_fields(self) -> Iterator[Field]:
@@ -199,7 +213,7 @@ class ModelSchemaConfig(BaseConfig):
                 continue
             yield cast(Field, fld)
 
-    def validate_configuration(self):
+    def validate_configuration(self) -> None:
         self.include = set() if self.include == ALL_FIELDS else set(self.include or ())
 
         if not self.model:
@@ -210,7 +224,7 @@ class ModelSchemaConfig(BaseConfig):
                 "Only one of 'include' or 'exclude' should be set in configuration."
             )
 
-    def check_invalid_keys(self, **field_names: Dict[str, Any]):
+    def check_invalid_keys(self, **field_names: Dict[str, Any]) -> None:
         keys = field_names.keys()
         invalid_include_exclude_fields = (
             set(self.include or []) | set(self.exclude or [])
@@ -238,10 +252,12 @@ class ModelSchemaConfig(BaseConfig):
             return True
         return False
 
-    def process_build_schema_parameters(self):
+    def process_build_schema_parameters(self) -> None:
         model_pk = getattr(
-            self.model._meta.pk, "name", getattr(self.model._meta.pk, "attname")
-        )
+            self.model._meta.pk,
+            "name",
+            getattr(self.model._meta.pk, "attname"),
+        )  # no type:ignore
         if (
             model_pk not in self.include
             and model_pk not in self.exclude

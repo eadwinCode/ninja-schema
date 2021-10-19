@@ -2,7 +2,6 @@ from itertools import chain
 from types import FunctionType
 from typing import Any, Callable
 
-from pydantic import ConfigError
 from pydantic.class_validators import (
     VALIDATOR_CONFIG_KEY,
     Validator,
@@ -10,6 +9,8 @@ from pydantic.class_validators import (
     _prepare_validator,
 )
 from pydantic.typing import AnyCallable
+
+from ..errors import ConfigError
 
 __all__ = ["model_validator", "ModelValidatorGroup"]
 

@@ -1,12 +1,14 @@
-from typing import TYPE_CHECKING, List, Optional, Type, cast
+from typing import TYPE_CHECKING, List, Optional, Type, Union, cast
 
 from django.db.models import Model
-from ninja.errors import ConfigError
 
-from .schema_registry import SchemaRegister, register
+from ..errors import ConfigError
+from ..types import DictStrAny
+from .schema_registry import SchemaRegister, registry as schema_registry
 
 if TYPE_CHECKING:
     from .model_schema import ModelSchema
+    from .schema import Schema
 
 __all__ = [
     "SchemaFactory",
@@ -15,7 +17,7 @@ __all__ = [
 
 class SchemaFactory:
     @classmethod
-    def get_model_config(cls, **kwargs):
+    def get_model_config(cls, **kwargs: DictStrAny) -> Type:
         class Config:
             pass
 
@@ -28,13 +30,13 @@ class SchemaFactory:
         cls,
         model: Type[Model],
         *,
-        registry: SchemaRegister = register,
+        registry: SchemaRegister = schema_registry,
         name: str = "",
         depth: int = 0,
         fields: Optional[List[str]] = None,
         exclude: Optional[List[str]] = None,
-        skip_registry=False
-    ) -> Type["ModelSchema"]:
+        skip_registry: bool = False
+    ) -> Union[Type["ModelSchema"], Type[Schema], None]:
         from .model_schema import ModelSchema
 
         name = name or model.__name__
@@ -46,7 +48,7 @@ class SchemaFactory:
         if schema:
             return schema
 
-        model_config = cls.get_model_config(
+        model_config_kwargs = dict(
             model=model,
             include=fields,
             exclude=exclude,
@@ -54,6 +56,7 @@ class SchemaFactory:
             depth=depth,
             registry=registry,
         )
+        model_config = cls.get_model_config(**model_config_kwargs)  # type: ignore
 
         attrs = dict(Config=model_config)
 

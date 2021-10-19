@@ -12,4 +12,4 @@ try:
         RangeField,
     )
 except ImportError:
-    ArrayField, HStoreField, JSONField, RangeField = (MissingType,) * 4
+    ArrayField, HStoreField, JSONField, RangeField = (MissingType,) * 4  # type: ignore
