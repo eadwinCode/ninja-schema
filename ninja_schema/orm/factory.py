@@ -36,7 +36,7 @@ class SchemaFactory:
         fields: Optional[List[str]] = None,
         exclude: Optional[List[str]] = None,
         skip_registry: bool = False
-    ) -> Union[Type["ModelSchema"], Type[Schema], None]:
+    ) -> Union[Type["ModelSchema"], Type["Schema"], None]:
         from .model_schema import ModelSchema
 
         name = name or model.__name__
