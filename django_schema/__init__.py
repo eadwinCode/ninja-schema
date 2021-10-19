@@ -1,4 +1,4 @@
-"""Django Ninja Schema - Builds Pydantic Schemas from Django Models"""
+"""Django Schema - Builds Pydantic Schemas from Django Models"""
 
 __version__ = "0.10.1"
 

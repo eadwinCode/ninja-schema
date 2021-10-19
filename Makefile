@@ -15,15 +15,15 @@ install: ## Install dependencies
 
 lint: ## Run code linters
 	make clean
-	black --check ninja_schema tests
-	isort --check ninja_schema tests
-	flake8 ninja_schema tests
-	mypy  ninja_schema
+	black --check django_schema tests
+	isort --check django_schema tests
+	flake8 django_schema tests
+	mypy  django_schemaa
 
 fmt format: ## Run code formatters
 	make clean
-	black ninja_schema tests
-	isort ninja_schema tests
+	black django_schema tests
+	isort django_schema tests
 
 test: ## Run tests
 	make clean
@@ -31,4 +31,4 @@ test: ## Run tests
 
 test-cov: ## Run tests with coverage
 	make clean
-	pytest --cov=ninja_schema --cov-report term-missing tests
+	pytest --cov=django_schema --cov-report term-missing tests
