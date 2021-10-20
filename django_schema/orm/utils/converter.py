@@ -1,20 +1,25 @@
 import datetime
+import re
 from enum import Enum
 from functools import singledispatch
 from typing import (
     TYPE_CHECKING,
     Any,
+    Iterable,
+    Iterator,
     List,
     Optional,
     Tuple,
     Type,
     TypeVar,
+    Union,
     no_type_check,
 )
 from uuid import UUID
 
 from django.db import models
 from django.db.models.fields import Field
+from django.utils.encoding import force_str
 from pydantic import AnyUrl, EmailStr, Json
 from pydantic.fields import FieldInfo, Undefined
 
@@ -29,6 +34,38 @@ if TYPE_CHECKING:
 
 TModel = TypeVar("TModel")
 
+NAME_PATTERN = r"^[_a-zA-Z][_a-zA-Z0-9]*$"
+COMPILED_NAME_PATTERN = re.compile(NAME_PATTERN)
+
+
+def assert_valid_name(name: str) -> None:
+    """Helper to assert that provided names are valid."""
+    assert COMPILED_NAME_PATTERN.match(
+        name
+    ), 'Names must match /{}/ but "{}" does not.'.format(NAME_PATTERN, name)
+
+
+def convert_choice_name(name: str) -> str:
+    name = force_str(name)
+    try:
+        assert_valid_name(name)
+    except AssertionError:
+        name = "A_%s" % name
+    return name
+
+
+def get_choices(
+    choices: Iterable[Union[Tuple[Any, Any], Tuple[str, Iterable[Tuple[Any, Any]]]]]
+) -> Iterator[Tuple[str, str, str]]:
+    for value, help_text in choices:
+        if isinstance(help_text, (tuple, list)):
+            for choice in get_choices(help_text):
+                yield choice
+        else:
+            name = convert_choice_name(value)
+            description = force_str(help_text)
+            yield name, value, description
+
 
 class FieldConversionProps:
     description: str
@@ -42,7 +79,9 @@ class FieldConversionProps:
         data = {}
         field_options = field.deconstruct()[3]  # 3 are the keywords
 
-        data["description"] = getattr(field, "help_text", None)
+        data["description"] = force_str(
+            getattr(field, "help_text", field.verbose_name)
+        ).strip()
         data["title"] = field.verbose_name.title()
 
         if not field.is_relation:
@@ -110,7 +149,9 @@ def construct_related_field_schema(
         schema,
         FieldInfo(
             default=default,
-            description=field.help_text,
+            description=force_str(
+                getattr(field, "help_text", field.verbose_name)
+            ).strip(),
             title=field.verbose_name.title(),
         ),
     )
@@ -152,7 +193,11 @@ def construct_relational_field_info(
 
 @no_type_check
 def construct_field_info(
-    python_type: type, field: Field, depth: int = 0, __module__: str = __name__
+    python_type: type,
+    field: Field,
+    depth: int = 0,
+    __module__: str = __name__,
+    is_custom_type: bool = False,
 ) -> Tuple[Type, FieldInfo]:
     default = ...
     default_factory = None
@@ -160,12 +205,14 @@ def construct_field_info(
     field_props = FieldConversionProps(field)
 
     if field.choices:
-        enum_choices = {v: k for k, v in field.choices}
+        choices = list(get_choices(field.choices))
+        named_choices = [(c[2], c[1]) for c in choices]
         python_type = Enum(  # type: ignore
             f"{field.name.title().replace('_', '')}Enum",
-            enum_choices,
+            named_choices,
             module=__module__,
         )
+        is_custom_type = True
 
     if field.has_default():
         if callable(field.default):
@@ -188,7 +235,7 @@ def construct_field_info(
             default_factory=default_factory,
             title=field_props.title,
             description=field_props.description,
-            max_length=field_props.max_length,
+            max_length=None if is_custom_type else field_props.max_length,
         ),
     )
 
@@ -211,7 +258,7 @@ def convert_field_to_string(
 def convert_field_to_email_string(
     field: Field, **kwargs: DictStrAny
 ) -> Tuple[Type, FieldInfo]:
-    return construct_field_info(EmailStr, field)
+    return construct_field_info(EmailStr, field, is_custom_type=True)
 
 
 @no_type_check
@@ -219,7 +266,7 @@ def convert_field_to_email_string(
 def convert_field_to_url_string(
     field: Field, **kwargs: DictStrAny
 ) -> Tuple[Type, FieldInfo]:
-    return construct_field_info(AnyUrl, field)
+    return construct_field_info(AnyUrl, field, is_custom_type=True)
 
 
 @no_type_check

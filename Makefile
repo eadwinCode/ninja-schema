@@ -18,7 +18,7 @@ lint: ## Run code linters
 	black --check django_schema tests
 	isort --check django_schema tests
 	flake8 django_schema tests
-	mypy  django_schemaa
+	mypy  django_schema
 
 fmt format: ## Run code formatters
 	make clean

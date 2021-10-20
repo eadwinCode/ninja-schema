@@ -14,10 +14,8 @@ class TestModelSchema:
                 model = Event
                 include = "__all__"
 
-        print(json.dumps(EventSchema.schema(), sort_keys=False, indent=4))
         assert EventSchema.schema() == {
             "title": "EventSchema",
-            "description": "Event(id, title, category, start_date, end_date)",
             "type": "object",
             "properties": {
                 "id": {"title": "Id", "extra": {}, "type": "integer"},
@@ -38,10 +36,8 @@ class TestModelSchema:
                 model = Event
                 include = ["title", "start_date", "end_date"]
 
-        print(json.dumps(Event2Schema.schema(), sort_keys=False, indent=4))
         assert Event2Schema.schema() == {
             "title": "Event2Schema",
-            "description": "Event(id, title, category, start_date, end_date)",
             "type": "object",
             "properties": {
                 "title": {"title": "Title", "maxLength": 100, "type": "string"},
@@ -62,10 +58,8 @@ class TestModelSchema:
                 include = "__all__"
                 depth = 1
 
-        print(json.dumps(EventDepthSchema.schema(), sort_keys=False, indent=4))
         assert EventDepthSchema.schema() == {
             "title": "EventDepthSchema",
-            "description": "Event(id, title, category, start_date, end_date)",
             "type": "object",
             "properties": {
                 "id": {"title": "Id", "extra": {}, "type": "integer"},
@@ -85,7 +79,6 @@ class TestModelSchema:
             "definitions": {
                 "Category": {
                     "title": "Category",
-                    "description": "Category(id, name, start_date, end_date)",
                     "type": "object",
                     "properties": {
                         "id": {"title": "Id", "extra": {}, "type": "integer"},
@@ -112,10 +105,8 @@ class TestModelSchema:
                 model = Event
                 exclude = ["id", "category"]
 
-        print(json.dumps(Event3Schema.schema(), sort_keys=False, indent=4))
         assert Event3Schema.schema() == {
             "title": "Event3Schema",
-            "description": "Event(id, title, category, start_date, end_date)",
             "type": "object",
             "properties": {
                 "title": {"title": "Title", "maxLength": 100, "type": "string"},
@@ -136,10 +127,8 @@ class TestModelSchema:
                 include = "__all__"
                 optional = "__all__"
 
-        print(json.dumps(Event4Schema.schema(), sort_keys=False, indent=4))
         assert Event4Schema.schema() == {
             "title": "Event4Schema",
-            "description": "Event(id, title, category, start_date, end_date)",
             "type": "object",
             "properties": {
                 "id": {"title": "Id", "extra": {}, "type": "integer"},
@@ -173,10 +162,8 @@ class TestModelSchema:
                     "start_date",
                 ]
 
-        print(json.dumps(Event5Schema.schema(), sort_keys=False, indent=4))
         assert Event5Schema.schema() == {
             "title": "Event5Schema",
-            "description": "Event(id, title, category, start_date, end_date)",
             "type": "object",
             "properties": {
                 "id": {"title": "Id", "type": "integer"},
@@ -205,10 +192,8 @@ class TestModelSchema:
                 model = Event
                 exclude = ["id", "category"]
 
-        print(json.dumps(Event6Schema.schema(), sort_keys=False, indent=4))
         assert Event6Schema.schema() == {
             "title": "Event6Schema",
-            "description": "Event(id, title, category, start_date, end_date)",
             "type": "object",
             "properties": {
                 "title": {"title": "Title", "maxLength": 100, "type": "string"},
@@ -325,7 +310,6 @@ class TestModelSchema:
         print(json.dumps(event_schema.schema(), sort_keys=False, indent=4))
         assert event_schema.schema() == {
             "title": "EventSchema",
-            "description": "Event(id, title, category, start_date, end_date)",
             "type": "object",
             "properties": {
                 "id": {"title": "Id", "extra": {}, "type": "integer"},

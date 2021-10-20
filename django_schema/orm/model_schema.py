@@ -199,7 +199,7 @@ class ModelSchemaConfig(BaseConfig):
         self.process_build_schema_parameters()
 
     @classmethod
-    def clone_field(cls, field: FieldInfo, **kwargs: Dict) -> FieldInfo:
+    def clone_field(cls, field: FieldInfo, **kwargs: Any) -> FieldInfo:
         field_dict = dict(field.__repr_args__())
         field_dict.update(**kwargs)
         new_field = FieldInfo(**field_dict)  # type: ignore
@@ -346,8 +346,6 @@ class ModelSchemaMetaclass(ModelMetaclass):
                         )
 
                 field_values[field_name] = (python_type, pydantic_field)
-
-            cls.__doc__ = namespace.get("__doc__", config_instance.model.__doc__)
             cls = update_class_missing_fields(
                 cls, bases, compute_field_annotations(namespace, **field_values)
             )
