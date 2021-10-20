@@ -10,7 +10,7 @@ Ninja Schema gives more pydantic feature while converting your django models.
 ## Installation
 
 ```
-pip install django-schema
+pip install ninja-schema
 ```
 
 ## Configuration Properties Definition
