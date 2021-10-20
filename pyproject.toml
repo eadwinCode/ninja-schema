@@ -3,7 +3,7 @@ requires = ["flit_core >=2,<4"]
 build-backend = "flit_core.buildapi"
 
 [tool.flit.metadata]
-module = "django_schema"
+module = "ninja_schema"
 dist-name = "ninja-schema"
 author = "Ezeudoh Tochukwu"
 author-email = "tochukwu.ezeudoh@gmail.com"
