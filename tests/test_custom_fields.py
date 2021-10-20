@@ -4,7 +4,7 @@ import pytest
 from django.db import models
 from pydantic import ValidationError
 
-from django_schema import ModelSchema
+from ninja_schema import ModelSchema
 
 SEMESTER_CHOICES = (
     ("1", "One"),

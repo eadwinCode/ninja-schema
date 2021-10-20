@@ -1,11 +1,11 @@
-![Test](https://github.com/eadwinCode/django-schema/workflows/Test/badge.svg)
-[![PyPI version](https://badge.fury.io/py/django-scheme.svg)](https://badge.fury.io/py/django-scheme)
-# Django Schema
-Django Schema gives more pydantic feature while converting your django models.
+![Test](https://github.com/eadwinCode/ninja-schema/workflows/Test/badge.svg)
+[![PyPI version](https://badge.fury.io/py/ninja-schema.svg)](https://badge.fury.io/py/ninja-schema)
+# Ninja Schema
+Ninja Schema gives more pydantic feature while converting your django models.
 
- **Key features:**
-  - **Custom Field Support**: django-schema converts django model to native pydantic types which gives you quick field validation out of the box. eg Enums, email, IPAddress, URLs
-  - **Field Validator**: Fields can be validated with **model_validator** just like pydantic **[validator](https://pydantic-docs.helpmanual.io/usage/validators/)** or **[root_validator](https://pydantic-docs.helpmanual.io/usage/validators/)**. 
+**Key features:**
+- **Custom Field Support**: Ninja Schema converts django model to native pydantic types which gives you quick field validation out of the box. eg Enums, email, IPAddress, URLs
+- **Field Validator**: Fields can be validated with **model_validator** just like pydantic **[validator](https://pydantic-docs.helpmanual.io/usage/validators/)** or **[root_validator](https://pydantic-docs.helpmanual.io/usage/validators/)**. 
   
 ## Installation
 
@@ -25,7 +25,7 @@ pip install django-schema
 
 ```Python
 from django.contrib.auth import get_user_model
-from django_schema import ModelSchema, model_validator
+from ninja_schema import ModelSchema, model_validator
 
 UserModel = get_user_model()
 

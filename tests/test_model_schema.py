@@ -2,8 +2,8 @@ import json
 
 import pytest
 
-from django_schema import ModelSchema, SchemaFactory, model_validator
-from django_schema.errors import ConfigError
+from ninja_schema import ModelSchema, SchemaFactory, model_validator
+from ninja_schema.errors import ConfigError
 from tests.models import Event
 
 
