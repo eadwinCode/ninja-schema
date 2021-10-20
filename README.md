@@ -179,7 +179,7 @@ print(UserSchema.schema())
 There functionalities are the same. More info [pydantic validators](https://pydantic-docs.helpmanual.io/usage/validators/)
 ```Python
 from django.contrib.auth import get_user_model
-from django_schema import ModelSchema, model_validator
+from ninja_schema import ModelSchema, model_validator
 
 UserModel = get_user_model()
 
