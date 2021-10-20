@@ -10,12 +10,18 @@ Django Schema gives more pydantic feature while converting your django models.
 ## Installation
 
 ```
-pip install django-ninja
+pip install django-schema
 ```
 
-## Usage
+## Configuration Properties Definition
+- **model**: Django Model
+- **include**: Fields to include, `default: '__all__'`
+- **exclude**: Fields to exclude, `default: set()`
+- **optional**: Fields to mark optional,` default: set()`
+`optional = '__all__'` will make all schema fields optional 
+- **depth**: defines depth to nested generated schema, `default: 0`
 
-In your django project next to urls.py create new `api.py` file:
+## Usage
 
 ```Python
 from django.contrib.auth import get_user_model
@@ -189,11 +195,3 @@ class CreateUserSchema(ModelSchema):
             raise ValueError('Username exists')
         return value_data
 ```
-
-## Configuration Properties
-- **model**: Django Model
-- **include**: Fields to include, `default: '__all__'`
-- **exclude**: Fields to exclude, `default: set()`
-- **optional**: Fields to mark optional,` default: set()`
-`optional = '__all__'` will make all schema fields optional 
-- **depth**: defines depth to nested generated schema, `default: 0`
