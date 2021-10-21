@@ -1,10 +1,15 @@
 ![Test](https://github.com/eadwinCode/ninja-schema/workflows/Test/badge.svg)
 [![PyPI version](https://badge.fury.io/py/ninja-schema.svg)](https://badge.fury.io/py/ninja-schema)
 # Ninja Schema
-Ninja Schema gives more pydantic feature while converting your django models.
+Ninja Schema converts your Django ORM models to Pydantic schemas with more Pydantic features supported.
+
+**Inspired by**: [django-ninja](https://django-ninja.rest-framework.com/) and [djantic](https://jordaneremieff.github.io/djantic/)
+
+### Requirements
+Python >= 3.6, django >= 2.1, pydantic >= 1.6
 
 **Key features:**
-- **Custom Field Support**: Ninja Schema converts django model to native pydantic types which gives you quick field validation out of the box. eg Enums, email, IPAddress, URLs
+- **Custom Field Support**: Ninja Schema converts django model to native pydantic types which gives you quick field validation out of the box. eg Enums, email, IPAddress, URLs, JSON, etc
 - **Field Validator**: Fields can be validated with **model_validator** just like pydantic **[validator](https://pydantic-docs.helpmanual.io/usage/validators/)** or **[root_validator](https://pydantic-docs.helpmanual.io/usage/validators/)**. 
   
 ## Installation
@@ -174,7 +179,7 @@ print(UserSchema.schema())
 }
 ```
 
-## Field Validation
+## Field Validation - `model_validator(*args, **kwargs)`
 **model_validator** is a substitute for **pydantic [validator](https://pydantic-docs.helpmanual.io/usage/validators/)** used for pre and post fields validation.
 There functionalities are the same. More info [pydantic validators](https://pydantic-docs.helpmanual.io/usage/validators/)
 ```Python
@@ -194,4 +199,29 @@ class CreateUserSchema(ModelSchema):
         if UserModel.objects.filter(username__icontains=value_data).exists():
             raise ValueError('Username exists')
         return value_data
+```
+## Apply Model Update - `apply(model_instance, **kwargs)`
+You can now transfer your data from your ModelSchema to your model with ninja schema `apply` function.
+The `apply` function uses `.dict` pydantic function to copy the schema data to `dict`. The `.dict` pydantic function gives more filtering options which can be pass as `kwargs` to the  `.apply` function.
+
+```Python
+from typings import Optional
+from django.contrib.auth import get_user_model
+from ninja_schema import ModelSchema, model_validator
+
+UserModel = get_user_model()
+new_user = UserModel.objects.create_user(username='eadwin', email='eadwin@example.com', password='password')
+
+
+class UpdateUserSchema(ModelSchema):
+    class Config:
+        model = UserModel
+        include = ['first_name', 'last_name', 'username']
+        optional = ['username']
+
+schema = UpdateUserSchema(first_name='Emeka', last_name='Okoro')
+schema.apply(new_user, exclude_none=True)
+
+assert new_user.first_name == 'Emeka' # True
+assert new_user.username == 'eadwin' # True
 ```
