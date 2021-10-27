@@ -18,7 +18,7 @@ Python >= 3.6, django >= 2.1, pydantic >= 1.6
 pip install ninja-schema
 ```
 
-## Configuration Properties Definition
+## Configuration Properties
 - **model**: Django Model
 - **include**: Fields to include, `default: '__all__'`
 - **exclude**: Fields to exclude, `default: set()`
