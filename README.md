@@ -26,7 +26,85 @@ pip install ninja-schema
 `optional = '__all__'` will make all schema fields optional 
 - **depth**: defines depth to nested generated schema, `default: 0`
 
-## Usage
+## Field Validation - `model_validator(*args, **kwargs)`
+**model_validator** is a substitute for **pydantic [validator](https://pydantic-docs.helpmanual.io/usage/validators/)** used for pre and post fields validation.
+There functionalities are the same. More info [pydantic validators](https://pydantic-docs.helpmanual.io/usage/validators/)
+```Python
+from django.contrib.auth import get_user_model
+from ninja_schema import ModelSchema, model_validator
+
+UserModel = get_user_model()
+
+
+class CreateUserSchema(ModelSchema):
+    class Config:
+        model = UserModel
+        include = ['username', 'email', 'password']
+
+    @model_validator('username')
+    def validate_unique_username(cls, value_data: str) -> str:
+        if UserModel.objects.filter(username__icontains=value_data).exists():
+            raise ValueError('Username exists')
+        return value_data
+```
+## Converting Model Object to Schema Object - `from_orm(cls, obj: Any)`
+You can generate a schema instance from your django model instance
+```Python
+from typings import Optional
+from django.contrib.auth import get_user_model
+from ninja_schema import ModelSchema, model_validator
+
+UserModel = get_user_model()
+new_user = UserModel.objects.create_user(
+    username='eadwin', email='eadwin@example.com', 
+    password='password', first_name='Emeka', last_name='Okoro'
+)
+
+
+class UserSchema(ModelSchema):
+    class Config:
+        model = UserModel
+        include = ['id','first_name', 'last_name', 'username', 'email']
+
+schema = UserSchema.from_orm(new_user)
+print(schema.json(indent=2)
+{
+    "id": 1,
+    "first_name": "Emeka",
+    "last_name": "Okoro",
+    "email": "eadwin@example.com",
+    "username": "eadwin",
+}
+```
+
+## Apply Model Update - `apply(self, model_instance, **kwargs)`
+You can now transfer your data from your ModelSchema to your model with ninja schema `apply` function.
+The `apply` function uses `.dict` pydantic function to copy the schema data to `dict`. The `.dict` pydantic function gives more filtering options which can be pass as `kwargs` to the  `.apply` function.
+
+For more info, visit [Pydantic model export](https://pydantic-docs.helpmanual.io/usage/exporting_models/)
+```Python
+from typings import Optional
+from django.contrib.auth import get_user_model
+from ninja_schema import ModelSchema, model_validator
+
+UserModel = get_user_model()
+new_user = UserModel.objects.create_user(username='eadwin', email='eadwin@example.com', password='password')
+
+
+class UpdateUserSchema(ModelSchema):
+    class Config:
+        model = UserModel
+        include = ['first_name', 'last_name', 'username']
+        optional = ['username']
+
+schema = UpdateUserSchema(first_name='Emeka', last_name='Okoro')
+schema.apply(new_user, exclude_none=True)
+
+assert new_user.first_name == 'Emeka' # True
+assert new_user.username == 'eadwin' # True
+```
+
+## Generated Schema Sample
 
 ```Python
 from django.contrib.auth import get_user_model
@@ -177,82 +255,4 @@ print(UserSchema.schema())
         }
     }
 }
-```
-
-## Field Validation - `model_validator(*args, **kwargs)`
-**model_validator** is a substitute for **pydantic [validator](https://pydantic-docs.helpmanual.io/usage/validators/)** used for pre and post fields validation.
-There functionalities are the same. More info [pydantic validators](https://pydantic-docs.helpmanual.io/usage/validators/)
-```Python
-from django.contrib.auth import get_user_model
-from ninja_schema import ModelSchema, model_validator
-
-UserModel = get_user_model()
-
-
-class CreateUserSchema(ModelSchema):
-    class Config:
-        model = UserModel
-        include = ['username', 'email', 'password']
-
-    @model_validator('username')
-    def validate_unique_username(cls, value_data: str) -> str:
-        if UserModel.objects.filter(username__icontains=value_data).exists():
-            raise ValueError('Username exists')
-        return value_data
-```
-## Converting Model Object to Schema Object - `from_orm(cls, obj: Any)`
-You can generate a schema instance from your django model instance
-```Python
-from typings import Optional
-from django.contrib.auth import get_user_model
-from ninja_schema import ModelSchema, model_validator
-
-UserModel = get_user_model()
-new_user = UserModel.objects.create_user(
-    username='eadwin', email='eadwin@example.com', 
-    password='password', first_name='Emeka', last_name='Okoro'
-)
-
-
-class UserSchema(ModelSchema):
-    class Config:
-        model = UserModel
-        include = ['id','first_name', 'last_name', 'username', 'email']
-
-schema = UserSchema.from_orm(new_user)
-print(schema.json(indent=2)
-{
-    "id": 1,
-    "first_name": "Emeka",
-    "last_name": "Okoro",
-    "email": "eadwin@example.com",
-    "username": "eadwin",
-}
-```
-
-## Apply Model Update - `apply(self, model_instance, **kwargs)`
-You can now transfer your data from your ModelSchema to your model with ninja schema `apply` function.
-The `apply` function uses `.dict` pydantic function to copy the schema data to `dict`. The `.dict` pydantic function gives more filtering options which can be pass as `kwargs` to the  `.apply` function.
-
-For more info, visit [Pydantic model export](https://pydantic-docs.helpmanual.io/usage/exporting_models/)
-```Python
-from typings import Optional
-from django.contrib.auth import get_user_model
-from ninja_schema import ModelSchema, model_validator
-
-UserModel = get_user_model()
-new_user = UserModel.objects.create_user(username='eadwin', email='eadwin@example.com', password='password')
-
-
-class UpdateUserSchema(ModelSchema):
-    class Config:
-        model = UserModel
-        include = ['first_name', 'last_name', 'username']
-        optional = ['username']
-
-schema = UpdateUserSchema(first_name='Emeka', last_name='Okoro')
-schema.apply(new_user, exclude_none=True)
-
-assert new_user.first_name == 'Emeka' # True
-assert new_user.username == 'eadwin' # True
 ```
