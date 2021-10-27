@@ -26,7 +26,7 @@ pip install ninja-schema
 `optional = '__all__'` will make all schema fields optional 
 - **depth**: defines depth to nested generated schema, `default: 0`
 
-## Field Validation - `model_validator(*args, **kwargs)`
+## Model Field Validation - `model_validator(*args, **kwargs)`
 **model_validator** is a substitute for **pydantic [validator](https://pydantic-docs.helpmanual.io/usage/validators/)** used for pre and post fields validation.
 There functionalities are the same. More info [pydantic validators](https://pydantic-docs.helpmanual.io/usage/validators/)
 ```Python
