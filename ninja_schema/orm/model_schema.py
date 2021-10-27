@@ -103,10 +103,10 @@ def update_class_missing_fields(
     hash_func: Optional[Callable[[Any], int]] = None
     untouched_types = ANNOTATED_FIELD_UNTOUCHED_TYPES
 
-    def is_untouched(value: Any) -> bool:
+    def is_untouched(val: Any) -> bool:
         return (
-            isinstance(value, untouched_types)
-            or value.__class__.__name__ == "cython_function_or_method"
+            isinstance(val, untouched_types)
+            or val.__class__.__name__ == "cython_function_or_method"
         )
 
     for base in reversed(bases):
@@ -374,7 +374,7 @@ class ModelSchemaMetaclass(ModelMetaclass):
 
                 field_values[field_name] = (python_type, pydantic_field)
             cls = update_class_missing_fields(
-                cls, bases, compute_field_annotations(namespace, **field_values)
+                cls, list(bases), compute_field_annotations(namespace, **field_values)
             )
             return cls
         return cls
