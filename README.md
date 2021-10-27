@@ -77,7 +77,7 @@ print(schema.json(indent=2)
 }
 ```
 
-## Apply Model Update - `apply(self, model_instance, **kwargs)`
+## `apply(self, model_instance, **kwargs)`
 You can now transfer your data from your ModelSchema to your model with ninja schema `apply` function.
 The `apply` function uses `.dict` pydantic function to copy the schema data to `dict`. The `.dict` pydantic function gives more filtering options which can be pass as `kwargs` to the  `.apply` function.
 
