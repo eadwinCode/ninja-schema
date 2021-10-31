@@ -1,6 +1,6 @@
 """Django Schema - Builds Pydantic Schemas from Django Models"""
 
-__version__ = "0.12.1"
+__version__ = "0.12.2"
 
 from .orm.factory import SchemaFactory
 from .orm.model_schema import ModelSchema
