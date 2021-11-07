@@ -95,7 +95,7 @@ class UpdateUserSchema(ModelSchema):
     class Config:
         model = UserModel
         include = ['first_name', 'last_name', 'username']
-        optional = ['username']
+        optional = ['username']  # `username` is now optional
 
 schema = UpdateUserSchema(first_name='Emeka', last_name='Okoro')
 schema.apply(new_user, exclude_none=True)
