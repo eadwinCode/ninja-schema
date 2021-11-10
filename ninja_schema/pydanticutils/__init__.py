@@ -1,4 +1,4 @@
-import warnings
+import logging
 from typing import TYPE_CHECKING, Any
 
 from pydantic.utils import is_valid_field
@@ -9,6 +9,8 @@ if TYPE_CHECKING:
     from pydantic.typing import DictStrAny
 
 __all__ = ["compute_field_annotations"]
+
+logger = logging.getLogger()
 
 
 def compute_field_annotations(
@@ -21,9 +23,8 @@ def compute_field_annotations(
 
     for f_name, f_def in field_definitions.items():
         if not is_valid_field(f_name):
-            warnings.warn(
-                f'fields may not start with an underscore, ignoring "{f_name}"',
-                RuntimeWarning,
+            logger.debug(
+                f'fields may not start with an underscore, ignoring "{f_name}"'
             )
         if isinstance(f_def, tuple):
             try:
