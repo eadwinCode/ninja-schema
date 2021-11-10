@@ -18,7 +18,7 @@ Python >= 3.6, django >= 2.1, pydantic >= 1.6
 pip install ninja-schema
 ```
 
-## Configuration Properties Definition
+## Configuration Properties
 - **model**: Django Model
 - **include**: Fields to include, `default: '__all__'`
 - **exclude**: Fields to exclude, `default: set()`
@@ -95,7 +95,7 @@ class UpdateUserSchema(ModelSchema):
     class Config:
         model = UserModel
         include = ['first_name', 'last_name', 'username']
-        optional = ['username']
+        optional = ['username']  # `username` is now optional
 
 schema = UpdateUserSchema(first_name='Emeka', last_name='Okoro')
 schema.apply(new_user, exclude_none=True)
