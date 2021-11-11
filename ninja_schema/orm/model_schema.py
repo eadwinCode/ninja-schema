@@ -369,7 +369,7 @@ class ModelSchemaMetaclass(ModelMetaclass):
                     )
                     if config_instance.is_field_in_optional(field_name):
                         pydantic_field = ModelSchemaConfig.clone_field(
-                            field=pydantic_field, default=None
+                            field=pydantic_field, default=None, default_factory=None
                         )
 
                 field_values[field_name] = (python_type, pydantic_field)
