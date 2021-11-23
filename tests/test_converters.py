@@ -1,6 +1,4 @@
 import json
-
-from typing import List
 from unittest.mock import Mock
 
 import django
@@ -8,9 +6,6 @@ import pytest
 from django.db import models
 from django.db.models import Manager
 
-from ninja.errors import ConfigError
-from ninja.orm import create_schema
-from ninja.orm.shortcuts import L, S
 from ninja_schema import ModelSchema
 
 
@@ -39,7 +34,11 @@ def test_inheritance():
         "properties": {
             "id": {"title": "Id", "type": "integer"},
             "parent_field": {"title": "Parent Field", "type": "string"},
-            "parentmodel_ptr_id": {"title": "Parentmodel Ptr", "type": "integer", "extra": {}},
+            "parentmodel_ptr_id": {
+                "title": "Parentmodel Ptr",
+                "type": "integer",
+                "extra": {},
+            },
             "child_field": {"title": "Child Field", "type": "string"},
         },
         "required": ["id", "parent_field", "child_field"],
@@ -83,12 +82,13 @@ def test_all_fields():
     class AllFieldsSchema(ModelSchema):
         class Config:
             model = AllFields
+
     # print(SchemaCls.schema())
     assert AllFieldsSchema.schema() == {
         "title": "AllFieldsSchema",
         "type": "object",
         "properties": {
-            'id': {'extra': {}, 'title': 'Id', 'type': 'integer'},
+            "id": {"extra": {}, "title": "Id", "type": "integer"},
             "bigintegerfield": {"title": "Bigintegerfield", "type": "integer"},
             "binaryfield": {
                 "title": "Binaryfield",
@@ -113,7 +113,7 @@ def test_all_fields():
                 "type": "number",
                 "format": "time-delta",
             },
-            "emailfield": {"title": "Emailfield", 'format': 'email', "type": "string"},
+            "emailfield": {"title": "Emailfield", "format": "email", "type": "string"},
             "filefield": {"title": "Filefield", "type": "string"},
             "filepathfield": {"title": "Filepathfield", "type": "string"},
             "floatfield": {"title": "Floatfield", "type": "number"},
@@ -142,7 +142,13 @@ def test_all_fields():
             "smallintegerfield": {"title": "Smallintegerfield", "type": "integer"},
             "textfield": {"title": "Textfield", "type": "string"},
             "timefield": {"title": "Timefield", "type": "string", "format": "time"},
-            "urlfield": {"title": "Urlfield", "type": "string", 'format': 'uri', 'maxLength': 65536, 'minLength': 1},
+            "urlfield": {
+                "title": "Urlfield",
+                "type": "string",
+                "format": "uri",
+                "maxLength": 65536,
+                "minLength": 1,
+            },
             "uuidfield": {"title": "Uuidfield", "type": "string", "format": "uuid"},
         },
         "required": [
@@ -187,11 +193,14 @@ def test_bigautofield():
     class ModelBigAutoSchema(ModelSchema):
         class Config:
             model = ModelBigAuto
+
     print(ModelBigAutoSchema.schema())
     assert ModelBigAutoSchema.schema() == {
         "title": "ModelBigAutoSchema",
         "type": "object",
-        "properties": {"bigautofiled": {"title": "Bigautofiled", "type": "integer", 'extra': {}}},
+        "properties": {
+            "bigautofiled": {"title": "Bigautofiled", "type": "integer", "extra": {}}
+        },
     }
 
 
@@ -215,8 +224,12 @@ def test_django_31_fields():
         "title": "ModelNewFieldsSchema",
         "type": "object",
         "properties": {
-            "id": {"title": "Id", "type": "integer", 'extra': {}},
-            "jsonfield": {"title": "Jsonfield", 'format': 'json-string', "type": "string"},
+            "id": {"title": "Id", "type": "integer", "extra": {}},
+            "jsonfield": {
+                "title": "Jsonfield",
+                "format": "json-string",
+                "type": "string",
+            },
             "positivebigintegerfield": {
                 "title": "Positivebigintegerfield",
                 "type": "integer",
@@ -227,7 +240,9 @@ def test_django_31_fields():
     with pytest.raises(Exception):
         ModelNewFieldsSchema(id=1, jsonfield={"any": "data"}, positivebigintegerfield=1)
 
-    obj = ModelNewFieldsSchema(id=1, jsonfield=json.dumps({"any": "data"}), positivebigintegerfield=1)
+    obj = ModelNewFieldsSchema(
+        id=1, jsonfield=json.dumps({"any": "data"}), positivebigintegerfield=1
+    )
     assert obj.dict() == {
         "id": 1,
         "jsonfield": {"any": "data"},
@@ -253,12 +268,13 @@ def test_relational():
     class TestSchema(ModelSchema):
         class Config:
             model = TestModel
+
     print(TestSchema.schema())
     assert TestSchema.schema() == {
         "title": "TestSchema",
         "type": "object",
         "properties": {
-            "id": {'extra': {}, "title": "Id", "type": "integer"},
+            "id": {"extra": {}, "title": "Id", "type": "integer"},
             "onetoonefield_id": {"title": "Onetoonefield", "type": "integer"},
             "foreignkey_id": {"title": "Foreignkey", "type": "integer"},
             "manytomanyfield": {
@@ -287,7 +303,7 @@ def test_default():
         "title": "MyModelSchema",
         "type": "object",
         "properties": {
-            "id": {"title": "Id", 'extra': {}, "type": "integer"},
+            "id": {"title": "Id", "extra": {}, "type": "integer"},
             "default_static": {
                 "title": "Default Static",
                 "default": "hello",
