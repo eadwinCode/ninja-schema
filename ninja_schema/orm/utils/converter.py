@@ -1,5 +1,8 @@
 import datetime
 import re
+import django
+
+from decimal import Decimal
 from enum import Enum
 from functools import singledispatch
 from typing import (
@@ -20,7 +23,7 @@ from uuid import UUID
 from django.db import models
 from django.db.models.fields import Field
 from django.utils.encoding import force_str
-from pydantic import AnyUrl, EmailStr, Json
+from pydantic import AnyUrl, EmailStr, Json, IPvAnyAddress
 from pydantic.fields import FieldInfo, Undefined
 
 from ...compat import ArrayField, HStoreField, JSONField, RangeField
@@ -292,6 +295,31 @@ def convert_field_to_int(field: Field, **kwargs: DictStrAny) -> Tuple[Type, Fiel
 
 
 @no_type_check
+@convert_django_field.register(models.BinaryField)
+def convert_field_to_int(field: Field, **kwargs: DictStrAny) -> Tuple[Type, FieldInfo]:
+    return construct_field_info(bytes, field)
+
+
+@no_type_check
+@convert_django_field.register(models.IPAddressField)
+@convert_django_field.register(models.GenericIPAddressField)
+def convert_field_to_int(field: Field, **kwargs: DictStrAny) -> Tuple[Type, FieldInfo]:
+    return construct_field_info(IPvAnyAddress, field)
+
+
+@no_type_check
+@convert_django_field.register(models.FloatField)
+def convert_field_to_int(field: Field, **kwargs: DictStrAny) -> Tuple[Type, FieldInfo]:
+    return construct_field_info(float, field)
+
+
+@no_type_check
+@convert_django_field.register(models.DecimalField)
+def convert_field_to_int(field: Field, **kwargs: DictStrAny) -> Tuple[Type, FieldInfo]:
+    return construct_field_info(Decimal, field)
+
+
+@no_type_check
 @convert_django_field.register(models.BooleanField)
 def convert_field_to_boolean(
     field: Field, **kwargs: DictStrAny
@@ -308,13 +336,11 @@ def convert_field_to_null_boolean(
 
 
 @no_type_check
-@convert_django_field.register(models.DecimalField)
-@convert_django_field.register(models.FloatField)
 @convert_django_field.register(models.DurationField)
 def convert_field_to_float(
     field: Field, **kwargs: DictStrAny
 ) -> Tuple[Type, FieldInfo]:
-    return construct_field_info(float, field)
+    return construct_field_info(datetime.timedelta, field)
 
 
 @no_type_check
@@ -415,3 +441,15 @@ def convert_postgres_range_to_string(
     if not isinstance(inner_type, list):
         inner_type = List[inner_type]  # type: ignore
     return inner_type, field_info
+
+
+if django.VERSION >= (3, 1):
+    @no_type_check
+    @convert_django_field.register(models.JSONField)
+    def convert_field_to_string(
+            field: Field, **kwargs: DictStrAny
+    ) -> Tuple[Type, FieldInfo]:
+        python_type = Json
+        if field.null:
+            python_type = Optional[Json]
+        return construct_field_info(python_type, field)
