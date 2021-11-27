@@ -81,8 +81,8 @@ print(schema.json(indent=2)
 ```
 
 ## `apply(self, model_instance, **kwargs)`
-You can now transfer your data from your ModelSchema to your model with ninja schema `apply` function.
-The `apply` function uses `.dict` pydantic function to copy the schema data to `dict`. The `.dict` pydantic function gives more filtering options which can be pass as `kwargs` to the  `.apply` function.
+You can transfer data from your ModelSchema to Django Model instance using the `apply` function.
+The `apply` function uses Pydantic model `.dict` function, `dict` function filtering that can be passed as `kwargs` to the `.apply` function.
 
 For more info, visit [Pydantic model export](https://pydantic-docs.helpmanual.io/usage/exporting_models/)
 ```Python
