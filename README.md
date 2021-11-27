@@ -23,7 +23,7 @@ pip install ninja-schema
 
 ## Configuration Properties
 - **model**: Django Model
-- **include**: Fields to include, `default: '__all__'`. Please note that when include = `__all__`, model pk becomes optional
+- **include**: Fields to include, `default: '__all__'`. Please note that when include = `__all__`, model's **PK** becomes optional
 - **exclude**: Fields to exclude, `default: set()`
 - **optional**: Fields to mark optional,` default: set()`
 `optional = '__all__'` will make all schema fields optional 
