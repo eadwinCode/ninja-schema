@@ -234,7 +234,7 @@ class ModelSchemaConfig(BaseConfig):
 
     def model_fields(self) -> Iterator[Field]:
         """returns iterator with all the fields that can be part of schema"""
-        for fld in self.model._meta.get_fields():
+        for fld in self.model._meta.get_fields():  # type: ignore
             if isinstance(fld, (ManyToOneRel, ManyToManyRel)):
                 # skipping relations
                 continue
@@ -281,16 +281,16 @@ class ModelSchemaConfig(BaseConfig):
 
     def process_build_schema_parameters(self) -> None:
         model_pk = getattr(
-            self.model._meta.pk,
+            self.model._meta.pk,  # type: ignore
             "name",
-            getattr(self.model._meta.pk, "attname"),
+            getattr(self.model._meta.pk, "attname"),  # type: ignore
         )  # no type:ignore
         if (
             model_pk not in self.include
             and model_pk not in self.exclude
             and ALL_FIELDS not in self.optional
         ):
-            self.optional.add(model_pk)
+            self.optional.add(str(model_pk))
 
 
 class ModelSchemaMetaclass(ModelMetaclass):
