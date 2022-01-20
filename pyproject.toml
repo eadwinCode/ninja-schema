@@ -40,7 +40,7 @@ classifiers = [
 ]
 
 requires = [
-    "Django >=3.1",
+    "Django >=2.0",
     "pydantic",
     "pydantic[email]"
 ]
