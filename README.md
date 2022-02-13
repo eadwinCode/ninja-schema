@@ -3,6 +3,8 @@
 [![PyPI version](https://img.shields.io/pypi/pyversions/ninja-schema.svg)](https://pypi.python.org/pypi/ninja-schema)
 [![PyPI version](https://img.shields.io/pypi/djversions/ninja-schema.svg)](https://pypi.python.org/pypi/ninja-schema)
 [![Codecov](https://img.shields.io/codecov/c/gh/eadwinCode/ninja-schema)](https://codecov.io/gh/eadwinCode/ninja-schema)
+[![Downloads](https://pepy.tech/badge/ninja-schema/month)](https://pepy.tech/project/ninja-schema)
+
 # Ninja Schema
 Ninja Schema converts your Django ORM models to Pydantic schemas with more Pydantic features supported.
 
