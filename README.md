@@ -23,6 +23,10 @@ Python >= 3.6, django >= 2.1, pydantic >= 1.6
 pip install ninja-schema
 ```
 
+## Example
+Checkout this sample project: https://github.com/eadwinCode/bookstoreapi
+
+
 ## Configuration Properties
 - **model**: Django Model
 - **include**: Fields to include, `default: '__all__'`. Please note that when include = `__all__`, model's **PK** becomes optional
