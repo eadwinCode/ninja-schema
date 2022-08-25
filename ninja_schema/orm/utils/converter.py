@@ -119,7 +119,7 @@ def convert_django_field(field: Field, **kwargs: Any) -> Tuple[Type, FieldInfo]:
 
 
 @no_type_check
-def create_m2m_link_type(type_: Type[TModel]) -> Type[TModel]:
+def create_m2m_link_type(type_: Type[TModel], related_model: models.Model) -> Type[TModel]:
     class M2MLink(type_):  # type: ignore
         @classmethod
         def __get_validators__(cls):
@@ -127,7 +127,11 @@ def create_m2m_link_type(type_: Type[TModel]) -> Type[TModel]:
 
         @classmethod
         def validate(cls, v):
-            return v.pk
+            if isinstance(v, type_):
+                return v
+            if isinstance(v, related_model):
+                return v.pk
+            raise Exception('Invalid type')
 
     return M2MLink
 
@@ -179,7 +183,7 @@ def construct_relational_field_info(
 
     python_type = inner_type
     if field.one_to_many or field.many_to_many:
-        m2m_type = create_m2m_link_type(inner_type)
+        m2m_type = create_m2m_link_type(inner_type, field.related_model)
         python_type = List[m2m_type]  # type: ignore
 
     field_info = FieldInfo(
