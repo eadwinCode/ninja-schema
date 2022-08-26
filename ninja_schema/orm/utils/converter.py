@@ -119,7 +119,9 @@ def convert_django_field(field: Field, **kwargs: Any) -> Tuple[Type, FieldInfo]:
 
 
 @no_type_check
-def create_m2m_link_type(type_: Type[TModel], related_model: models.Model) -> Type[TModel]:
+def create_m2m_link_type(
+    type_: Type[TModel], related_model: models.Model
+) -> Type[TModel]:
     class M2MLink(type_):  # type: ignore
         @classmethod
         def __get_validators__(cls):
@@ -129,9 +131,9 @@ def create_m2m_link_type(type_: Type[TModel], related_model: models.Model) -> Ty
         def validate(cls, v):
             if isinstance(v, type_):
                 return v
-            if isinstance(v, related_model):
+            if hasattr(v, "pk") and isinstance(v.pk, type_):
                 return v.pk
-            raise Exception('Invalid type')
+            raise Exception("Invalid type")
 
     return M2MLink
 
