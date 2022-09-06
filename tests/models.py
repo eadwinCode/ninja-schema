@@ -21,3 +21,12 @@ class Event(models.Model):
 
 class Client(models.Model):
     key = models.CharField(max_length=20, unique=True)
+
+
+class Day(models.Model):
+    name = models.CharField(max_length=20, unique=True)
+
+
+class Week(models.Model):
+    name = models.CharField(max_length=20, unique=True)
+    days = models.ManyToManyField(Day)
