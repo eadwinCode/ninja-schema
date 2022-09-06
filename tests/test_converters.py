@@ -7,6 +7,7 @@ from django.db import models
 from django.db.models import Manager
 
 from ninja_schema import ModelSchema
+from tests.models import Week
 
 
 def test_inheritance():
@@ -347,3 +348,24 @@ def test_manytomany():
     data = BarSchema.from_orm(bar).dict()
 
     assert data == {"id": 1, "m2m": [1]}
+
+
+def test_manytomany_validation():
+    bar = Mock()
+    bar.pk = "555555s"
+
+    foo = Mock()
+    foo.pk = 1
+
+    class WeekSchema(ModelSchema):
+        class Config:
+            model = Week
+
+    with pytest.raises(Exception, match="Invalid type"):
+        WeekSchema(name="FirstWeek", days=["1", "2"])
+
+    with pytest.raises(Exception, match="Invalid type"):
+        WeekSchema(name="FirstWeek", days=[bar, bar])
+
+    schema = WeekSchema(name="FirstWeek", days=[foo, foo])
+    assert schema.dict() == {"id": None, "name": "FirstWeek", "days": [1, 1]}
