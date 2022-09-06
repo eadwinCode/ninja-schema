@@ -11,7 +11,9 @@ Ninja Schema converts your Django ORM models to Pydantic schemas with more Pydan
 **Inspired by**: [django-ninja](https://django-ninja.rest-framework.com/) and [djantic](https://jordaneremieff.github.io/djantic/)
 
 ### Requirements
-Python >= 3.6, django >= 2.1, pydantic >= 1.6
+Python >= 3.6
+django >= 2.1
+pydantic >= 1.6
 
 **Key features:**
 - **Custom Field Support**: Ninja Schema converts django model to native pydantic types which gives you quick field validation out of the box. eg Enums, email, IPAddress, URLs, JSON, etc
