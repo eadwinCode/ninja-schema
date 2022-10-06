@@ -346,8 +346,13 @@ class TestModelSchema:
         json_event.apply_to_model(event)
         assert event.title == "PyConf Updated"
 
-    def test_abstract_model_schema_does_not_raise_exception_for_incomplete_configuration(self):
-        with pytest.raises(Exception, match="Invalid Configuration. 'model' is required") as ex:
+    def test_abstract_model_schema_does_not_raise_exception_for_incomplete_configuration(
+        self,
+    ):
+        with pytest.raises(
+            Exception, match="Invalid Configuration. 'model' is required"
+        ):
+
             class AbstractModel(ModelSchema):
                 class Config:
                     orm_mode = True

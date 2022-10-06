@@ -307,13 +307,17 @@ class ModelSchemaMetaclass(ModelMetaclass):
         if bases == (SchemaBaseModel,) or not namespace.get("Config"):
             return cls
 
-        config = namespace.get('Config')
+        config = namespace.get("Config")
         config_instance = None
 
         if config:
             config_instance = ModelSchemaConfig(name, config)
 
-        if issubclass(cls, ModelSchema) and config_instance and not config_instance.abstract:
+        if (
+            issubclass(cls, ModelSchema)
+            and config_instance
+            and not config_instance.abstract
+        ):
             annotations = namespace.get("__annotations__", {})
             try:
                 fields = list(config_instance.model_fields())
