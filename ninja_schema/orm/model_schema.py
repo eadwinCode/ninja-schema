@@ -216,14 +216,16 @@ class ModelSchemaConfig(BaseConfig):
         self.exclude = set(getattr(options, "exclude", None) or ())
         self.skip_registry = getattr(options, "skip_registry", False)
         self.registry = getattr(options, "registry", global_registry)
+        self.abstract = getattr(options, "ninja_schema_abstract", False)
         _optional = getattr(options, "optional", None)
         self.optional = (
             {ALL_FIELDS} if _optional == ALL_FIELDS else set(_optional or ())
         )
         self.depth = int(getattr(options, "depth", 0))
         self.schema_class_name = schema_class_name
-        self.validate_configuration()
-        self.process_build_schema_parameters()
+        if not self.abstract:
+            self.validate_configuration()
+            self.process_build_schema_parameters()
 
     @classmethod
     def clone_field(cls, field: FieldInfo, **kwargs: Any) -> FieldInfo:
@@ -305,11 +307,14 @@ class ModelSchemaMetaclass(ModelMetaclass):
         if bases == (SchemaBaseModel,) or not namespace.get("Config"):
             return cls
 
-        if issubclass(cls, ModelSchema):
-            config = namespace["Config"]
-            config_instance = ModelSchemaConfig(name, config)
-            annotations = namespace.get("__annotations__", {})
+        config = namespace.get('Config')
+        config_instance = None
 
+        if config:
+            config_instance = ModelSchemaConfig(name, config)
+
+        if issubclass(cls, ModelSchema) and config_instance and not config_instance.abstract:
+            annotations = namespace.get("__annotations__", {})
             try:
                 fields = list(config_instance.model_fields())
             except AttributeError as exc:
