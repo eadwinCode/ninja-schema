@@ -221,6 +221,7 @@ class ModelSchemaConfig(BaseConfig):
         self.optional = (
             {ALL_FIELDS} if _optional == ALL_FIELDS else set(_optional or ())
         )
+        self.additional = getattr(options, "additional", None)
         self.depth = int(getattr(options, "depth", 0))
         self.schema_class_name = schema_class_name
         if not self.abstract:
@@ -318,6 +319,11 @@ class ModelSchemaMetaclass(ModelMetaclass):
             and config_instance
             and not config_instance.abstract
         ):
+            if config_instance.additional:
+                for additional in config_instance.additional:
+                    namespace["__annotations__"][additional["field_name"]] = additional["field_type"]
+                    namespace[additional["field_name"]] = additional["field_default"]
+            
             annotations = namespace.get("__annotations__", {})
             try:
                 fields = list(config_instance.model_fields())
