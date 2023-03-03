@@ -8,6 +8,38 @@ from tests.models import Event
 
 
 class TestModelSchema:
+    def test_schema_additional_fields(self):
+        class EventSchema(ModelSchema):
+            class Config:
+                model = Event
+                include = ["id"]
+                additional = [
+                    {
+                        "field_name": "custom_int_field",
+                        "field_type": int,
+                    }, 
+                    {
+                        "field_name": "custom_str_field",
+                        "field_type": str,
+                        "field_default": "default",
+                    },
+                    {
+                        "field_name": "custom_bool_field",
+                        "field_type": bool | None,
+                    }
+                ]
+        assert EventSchema.schema() == {
+            "title": "EventSchema",
+            "type": "object",
+            "properties": {
+                "custom_int_field": {"title": "Custom Int Field", "type": "integer"},
+                "custom_str_field": {"title": "Custom Str Field", "type": "string", "default": "default"},
+                "custom_bool_field": {"title": "Custom Bool Field", "type": "boolean"},
+                "id": {"title": "Id", "type": "integer"},
+            },
+            "required": ["id", "custom_int_field"],
+        }
+
     def test_schema_include_fields(self):
         class EventSchema(ModelSchema):
             class Config:

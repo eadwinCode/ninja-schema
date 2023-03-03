@@ -319,13 +319,14 @@ class ModelSchemaMetaclass(ModelMetaclass):
             and config_instance
             and not config_instance.abstract
         ):
+            annotations = namespace.setdefault("__annotations__", {})
+
             if config_instance.additional:
                 for additional in config_instance.additional:
                     namespace["__annotations__"][additional["field_name"]] = additional["field_type"]
                     if "field_default" in additional:
                         namespace[additional["field_name"]] = additional["field_default"]
             
-            annotations = namespace.get("__annotations__", {})
             try:
                 fields = list(config_instance.model_fields())
             except AttributeError as exc:
