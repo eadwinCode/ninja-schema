@@ -322,7 +322,8 @@ class ModelSchemaMetaclass(ModelMetaclass):
             if config_instance.additional:
                 for additional in config_instance.additional:
                     namespace["__annotations__"][additional["field_name"]] = additional["field_type"]
-                    namespace[additional["field_name"]] = additional["field_default"]
+                    if "field_default" in additional:
+                        namespace[additional["field_name"]] = additional["field_default"]
             
             annotations = namespace.get("__annotations__", {})
             try:
