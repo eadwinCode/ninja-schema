@@ -11,8 +11,8 @@ Ninja Schema converts your Django ORM models to Pydantic schemas with more Pydan
 **Inspired by**: [django-ninja](https://django-ninja.rest-framework.com/) and [djantic](https://jordaneremieff.github.io/djantic/)
 
 ### Requirements
-Python >= 3.6
-django >= 2.1
+Python >= 3.8
+django >= 3
 pydantic >= 1.6
 
 **Key features:**
