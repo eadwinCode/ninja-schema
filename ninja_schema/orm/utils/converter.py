@@ -28,7 +28,8 @@ from pydantic.fields import FieldInfo, Undefined
 from ...compat import ArrayField, HStoreField, JSONField, RangeField
 from ...types import DictStrAny
 from ..factory import SchemaFactory
-from ..schema_registry import SchemaRegister, registry as global_registry
+from ..schema_registry import SchemaRegister
+from ..schema_registry import registry as global_registry
 
 if TYPE_CHECKING:
     from ..model_schema import ModelSchema

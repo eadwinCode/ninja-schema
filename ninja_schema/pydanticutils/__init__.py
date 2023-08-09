@@ -17,7 +17,6 @@ def compute_field_annotations(
     namespace: "DictStrAny",
     **field_definitions: Any,
 ) -> "DictStrAny":
-
     fields = {}
     annotations = {}
 

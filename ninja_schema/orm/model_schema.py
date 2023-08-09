@@ -74,9 +74,9 @@ namespace_keys = [
 
 
 class PydanticNamespace:
-    __annotations__: Dict = dict()
+    __annotations__: Dict = {}
     __config__: Optional[Type[BaseConfig]] = None
-    __fields__: Dict[str, ModelField] = dict()
+    __fields__: Dict[str, ModelField] = {}
     __validators__: ModelValidatorGroup = ModelValidatorGroup({})
     __pre_root_validators__: List = []
     __post_root_validators__: List = []
@@ -285,7 +285,7 @@ class ModelSchemaConfig(BaseConfig):
         model_pk = getattr(
             self.model._meta.pk,  # type: ignore
             "name",
-            getattr(self.model._meta.pk, "attname"),  # type: ignore
+            self.model._meta.pk.attname,  # type: ignore
         )  # no type:ignore
         if (
             model_pk not in self.include
@@ -324,7 +324,7 @@ class ModelSchemaMetaclass(ModelMetaclass):
             except AttributeError as exc:
                 raise ConfigError(
                     f"{exc} (Is `Config.model` a valid Django model class?)"
-                )
+                ) from exc
 
             field_values, _seen = {}, set()
 
@@ -354,7 +354,6 @@ class ModelSchemaMetaclass(ModelMetaclass):
 
                 _seen.add(field_name)
                 if field_name in annotations and field_name in namespace:
-
                     python_type = annotations.pop(field_name)
                     pydantic_field = namespace[field_name]
                     if (
