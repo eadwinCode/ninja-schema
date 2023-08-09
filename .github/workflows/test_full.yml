@@ -21,7 +21,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install core
-        run: pip install "Django${{ matrix.django-version }}" pydantic pydantic[email]
+        run: pip install "Django${{ matrix.django-version }}" pydantic >=1.6.2,!=1.7,!=1.7.1,!=1.7.2,!=1.7.3,!=1.8,!=1.8.1,<2.0.0 pydantic[email]
       - name: Install tests
         run: pip install pytest pytest-django
       - name: Test
