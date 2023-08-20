@@ -40,7 +40,7 @@ classifiers = [
 
 requires = [
     "Django >=2.0",
-    "pydantic >=1.6.2,!=1.7,!=1.7.1,!=1.7.2,!=1.7.3,!=1.8,!=1.8.1,<2.0.0",
+     "pydantic>=1.7.4,!=1.8,!=1.8.1,!=2.0.0,!=2.0.1,!=2.1.0,<3.0.0",
     "pydantic[email]"
 ]
 description-file = "README.md"
