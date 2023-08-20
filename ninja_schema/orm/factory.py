@@ -1,6 +1,9 @@
+import typing
 from typing import TYPE_CHECKING, List, Optional, Type, Union, cast
 
 from django.db.models import Model
+
+from ninja_schema.pydanticutils import IS_PYDANTIC_V1
 
 from ..errors import ConfigError
 from ..types import DictStrAny
@@ -36,7 +39,7 @@ class SchemaFactory:
         depth: int = 0,
         fields: Optional[List[str]] = None,
         exclude: Optional[List[str]] = None,
-        skip_registry: bool = False
+        skip_registry: bool = False,
     ) -> Union[Type["ModelSchema"], Type["Schema"], None]:
         from .model_schema import ModelSchema
 
@@ -57,12 +60,38 @@ class SchemaFactory:
             "depth": depth,
             "registry": registry,
         }
-        model_config = cls.get_model_config(**model_config_kwargs)  # type: ignore
+        cls.get_model_config(**model_config_kwargs)  # type: ignore
+        if IS_PYDANTIC_V1:
+            new_schema = cls._get_schema_v1(name, model_config_kwargs, ModelSchema)
+        else:
+            new_schema = cls._get_schema_v2(name, model_config_kwargs, ModelSchema)
 
-        attrs = {"Config": model_config}
-
-        new_schema = type(name, (ModelSchema,), attrs)
         new_schema = cast(Type[ModelSchema], new_schema)
         if not skip_registry:
             registry.register_model(model, new_schema)
         return new_schema
+
+    @classmethod
+    def _get_schema_v1(
+        cls, name: str, model_config_kwargs: typing.Dict, model_type: typing.Type
+    ) -> Union[Type["ModelSchema"], Type["Schema"], None]:
+        model_config = cls.get_model_config(**model_config_kwargs)  # type: ignore
+
+        attrs = {"Config": model_config}
+
+        new_schema = type(name, (model_type,), attrs)
+        new_schema = cast(Type["ModelSchema"], new_schema)
+        return new_schema
+
+    @classmethod
+    def _get_schema_v2(
+        cls, name: str, model_config_kwargs: typing.Dict, model_type: typing.Type
+    ) -> Union[Type["ModelSchema"], Type["Schema"]]:
+        model_config = cls.get_model_config(**model_config_kwargs)  # type: ignore
+
+        new_schema_string = f"""class {name}(model_type):
+            class Config(model_config):
+                pass """
+
+        exec(new_schema_string, locals())
+        return locals().get(name)

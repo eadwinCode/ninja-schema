@@ -2,15 +2,19 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from pydantic.utils import is_valid_field
+from pydantic.version import VERSION as _PYDANTIC_VERSION
 
 from ..errors import ConfigError
 
 if TYPE_CHECKING:
     from pydantic.typing import DictStrAny
 
-__all__ = ["compute_field_annotations"]
+__all__ = ["compute_field_annotations", "IS_PYDANTIC_V1", "PYDANTIC_VERSION"]
 
 logger = logging.getLogger()
+
+PYDANTIC_VERSION = list(map(int, _PYDANTIC_VERSION.split(".")))[:2]
+IS_PYDANTIC_V1 = PYDANTIC_VERSION[0] == 1
 
 
 def compute_field_annotations(

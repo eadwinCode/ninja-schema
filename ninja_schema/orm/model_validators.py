@@ -1,14 +1,26 @@
+import warnings
 from itertools import chain
 from types import FunctionType
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
-from pydantic.class_validators import (
-    VALIDATOR_CONFIG_KEY,
-    Validator,
-    ValidatorGroup,
-    _prepare_validator,
-)
-from pydantic.typing import AnyCallable
+from ..pydanticutils import IS_PYDANTIC_V1
+
+if IS_PYDANTIC_V1:
+    from pydantic.class_validators import (
+        VALIDATOR_CONFIG_KEY,
+        Validator,
+        ValidatorGroup,
+        _prepare_validator,
+    )
+else:
+    from pydantic import field_validator
+    from pydantic.functional_validators import FieldValidatorModes
+    from pydantic.v1.class_validators import (
+        VALIDATOR_CONFIG_KEY,
+        Validator,
+        ValidatorGroup,
+        _prepare_validator,
+    )
 
 from ..errors import ConfigError
 
@@ -24,7 +36,7 @@ class ModelValidator:
         each_item: bool = False,
         always: bool = False,
         check_fields: bool = False,
-    ) -> Callable[[AnyCallable], classmethod]:
+    ) -> Callable[[Callable], classmethod]:
         """
         Decorate methods on the class indicating that they should be used to validate fields
         :param fields: which field(s) the method should be called on
@@ -63,7 +75,23 @@ class ModelValidator:
         return dec
 
 
-model_validator = ModelValidator.model_validator
+if IS_PYDANTIC_V1:
+    model_validator = ModelValidator.model_validator
+else:
+
+    def model_validator(
+        __field: str,
+        *fields: str,
+        mode: FieldValidatorModes = "after",
+        check_fields: Optional[bool] = None,
+    ) -> Callable[[Any], Any]:
+        warnings.warn(
+            f"'{model_validator}' is deprecated for pydantic version 2.x.x. "
+            f"Use 'field_validator' for the pydantic package instead.",
+            category=DeprecationWarning,
+            stacklevel=1,
+        )
+        return field_validator(__field, *fields, mode=mode, check_fields=check_fields)
 
 
 class ModelValidatorGroup(ValidatorGroup):

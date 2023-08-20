@@ -1,21 +1,9 @@
 import datetime
 import re
+import typing as t
 from decimal import Decimal
 from enum import Enum
 from functools import singledispatch
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-    no_type_check,
-)
 from uuid import UUID
 
 import django
@@ -23,19 +11,26 @@ from django.db import models
 from django.db.models.fields import Field
 from django.utils.encoding import force_str
 from pydantic import AnyUrl, EmailStr, IPvAnyAddress, Json
-from pydantic.fields import FieldInfo, Undefined
+from pydantic.fields import FieldInfo
 
 from ...compat import ArrayField, HStoreField, JSONField, RangeField
+from ...pydanticutils import IS_PYDANTIC_V1
 from ...types import DictStrAny
 from ..factory import SchemaFactory
 from ..schema_registry import SchemaRegister
 from ..schema_registry import registry as global_registry
 
-if TYPE_CHECKING:
+try:
+    from pydantic.fields import Undefined
+except Exception:
+    from pydantic_core import CoreSchema, core_schema
+    from pydantic_core import PydanticUndefined as Undefined
+
+if t.TYPE_CHECKING:
     from ..model_schema import ModelSchema
 
 
-TModel = TypeVar("TModel")
+TModel = t.TypeVar("TModel")
 
 NAME_PATTERN = r"^[_a-zA-Z][_a-zA-Z0-9]*$"
 COMPILED_NAME_PATTERN = re.compile(NAME_PATTERN)
@@ -58,8 +53,10 @@ def convert_choice_name(name: str) -> str:
 
 
 def get_choices(
-    choices: Iterable[Union[Tuple[Any, Any], Tuple[str, Iterable[Tuple[Any, Any]]]]]
-) -> Iterator[Tuple[str, str, str]]:
+    choices: t.Iterable[
+        t.Union[t.Tuple[t.Any, t.Any], t.Tuple[str, t.Iterable[t.Tuple[t.Any, t.Any]]]]
+    ]
+) -> t.Iterator[t.Tuple[str, str, str]]:
     for value, help_text in choices:
         if isinstance(help_text, (tuple, list)):
             for choice in get_choices(help_text):
@@ -105,7 +102,7 @@ def convert_django_field_with_choices(
     registry: SchemaRegister,
     depth: int = 0,
     skip_registry: bool = False,
-) -> Tuple[Type, FieldInfo]:
+) -> t.Tuple[t.Type, FieldInfo]:
     converted = convert_django_field(
         field, registry=registry, depth=depth, skip_registry=skip_registry
     )
@@ -113,20 +110,30 @@ def convert_django_field_with_choices(
 
 
 @singledispatch
-def convert_django_field(field: Field, **kwargs: Any) -> Tuple[Type, FieldInfo]:
+def convert_django_field(field: Field, **kwargs: t.Any) -> t.Tuple[t.Type, FieldInfo]:
     raise Exception(
         "Don't know how to convert the Django field %s (%s)" % (field, field.__class__)
     )
 
 
-@no_type_check
+@t.no_type_check
 def create_m2m_link_type(
-    type_: Type[TModel], related_model: models.Model
-) -> Type[TModel]:
+    type_: t.Type[TModel], related_model: models.Model
+) -> t.Type[TModel]:
     class M2MLink(type_):  # type: ignore
-        @classmethod
-        def __get_validators__(cls):
-            yield cls.validate
+        if IS_PYDANTIC_V1:
+
+            @classmethod
+            def __get_validators__(cls):
+                yield cls.validate
+
+        else:
+
+            @classmethod
+            def __get_pydantic_core_schema__(
+                cls, source_type: t.Any, handler: t.Any
+            ) -> CoreSchema:
+                return core_schema.no_info_plain_validator_function(cls.validate)
 
         @classmethod
         def validate(cls, v):
@@ -139,10 +146,10 @@ def create_m2m_link_type(
     return M2MLink
 
 
-@no_type_check
+@t.no_type_check
 def construct_related_field_schema(
     field: Field, *, registry: SchemaRegister, depth: int, skip_registry=False
-) -> Tuple[Type["ModelSchema"], FieldInfo]:
+) -> t.Tuple[t.Type["ModelSchema"], FieldInfo]:
     # create a sample config and return the type
     model = field.related_model
     schema = SchemaFactory.create_schema(
@@ -166,15 +173,15 @@ def construct_related_field_schema(
     )
 
 
-@no_type_check
+@t.no_type_check
 def construct_relational_field_info(
     field: Field,
     *,
     registry: SchemaRegister,
     depth: int = 0,
     __module__: str = __name__,
-) -> Tuple[Type, FieldInfo]:
-    default: Any = ...
+) -> t.Tuple[t.Type, FieldInfo]:
+    default: t.Any = ...
     field_props = FieldConversionProps(field)
 
     inner_type, field_info = convert_django_field(
@@ -187,7 +194,7 @@ def construct_relational_field_info(
     python_type = inner_type
     if field.one_to_many or field.many_to_many:
         m2m_type = create_m2m_link_type(inner_type, field.related_model)
-        python_type = List[m2m_type]  # type: ignore
+        python_type = t.List[m2m_type]  # type: ignore
 
     field_info = FieldInfo(
         default=default,
@@ -200,14 +207,14 @@ def construct_relational_field_info(
     return python_type, field_info
 
 
-@no_type_check
+@t.no_type_check
 def construct_field_info(
     python_type: type,
     field: Field,
     depth: int = 0,
     __module__: str = __name__,
     is_custom_type: bool = False,
-) -> Tuple[Type, FieldInfo]:
+) -> t.Tuple[t.Type, FieldInfo]:
     default = ...
     default_factory = None
 
@@ -249,7 +256,7 @@ def construct_field_info(
     )
 
 
-@no_type_check
+@t.no_type_check
 @convert_django_field.register(models.CharField)
 @convert_django_field.register(models.TextField)
 @convert_django_field.register(models.SlugField)
@@ -258,142 +265,150 @@ def construct_field_info(
 @convert_django_field.register(models.FilePathField)
 def convert_field_to_string(
     field: Field, **kwargs: DictStrAny
-) -> Tuple[Type, FieldInfo]:
+) -> t.Tuple[t.Type, FieldInfo]:
     return construct_field_info(str, field)
 
 
-@no_type_check
+@t.no_type_check
 @convert_django_field.register(models.EmailField)
 def convert_field_to_email_string(
     field: Field, **kwargs: DictStrAny
-) -> Tuple[Type, FieldInfo]:
+) -> t.Tuple[t.Type, FieldInfo]:
     return construct_field_info(EmailStr, field, is_custom_type=True)
 
 
-@no_type_check
+@t.no_type_check
 @convert_django_field.register(models.URLField)
 def convert_field_to_url_string(
     field: Field, **kwargs: DictStrAny
-) -> Tuple[Type, FieldInfo]:
+) -> t.Tuple[t.Type, FieldInfo]:
     return construct_field_info(AnyUrl, field, is_custom_type=True)
 
 
-@no_type_check
+@t.no_type_check
 @convert_django_field.register(models.AutoField)
-def convert_field_to_id(field: Field, **kwargs: DictStrAny) -> Tuple[Type, FieldInfo]:
+def convert_field_to_id(
+    field: Field, **kwargs: DictStrAny
+) -> t.Tuple[t.Type, FieldInfo]:
     return construct_field_info(int, field)
 
 
-@no_type_check
+@t.no_type_check
 @convert_django_field.register(models.UUIDField)
-def convert_field_to_uuid(field: Field, **kwargs: DictStrAny) -> Tuple[Type, FieldInfo]:
+def convert_field_to_uuid(
+    field: Field, **kwargs: DictStrAny
+) -> t.Tuple[t.Type, FieldInfo]:
     return construct_field_info(UUID, field)
 
 
-@no_type_check
+@t.no_type_check
 @convert_django_field.register(models.PositiveIntegerField)
 @convert_django_field.register(models.PositiveSmallIntegerField)
 @convert_django_field.register(models.SmallIntegerField)
 @convert_django_field.register(models.BigIntegerField)
 @convert_django_field.register(models.IntegerField)
-def convert_field_to_int(field: Field, **kwargs: DictStrAny) -> Tuple[Type, FieldInfo]:
+def convert_field_to_int(
+    field: Field, **kwargs: DictStrAny
+) -> t.Tuple[t.Type, FieldInfo]:
     return construct_field_info(int, field)
 
 
-@no_type_check
+@t.no_type_check
 @convert_django_field.register(models.BinaryField)
-def convert_field_to_byte(field: Field, **kwargs: DictStrAny) -> Tuple[Type, FieldInfo]:
+def convert_field_to_byte(
+    field: Field, **kwargs: DictStrAny
+) -> t.Tuple[t.Type, FieldInfo]:
     return construct_field_info(bytes, field)
 
 
-@no_type_check
+@t.no_type_check
 @convert_django_field.register(models.IPAddressField)
 @convert_django_field.register(models.GenericIPAddressField)
 def convert_field_to_ipaddress(
     field: Field, **kwargs: DictStrAny
-) -> Tuple[Type, FieldInfo]:
+) -> t.Tuple[t.Type, FieldInfo]:
     return construct_field_info(IPvAnyAddress, field)
 
 
-@no_type_check
+@t.no_type_check
 @convert_django_field.register(models.FloatField)
 def convert_field_to_float(
     field: Field, **kwargs: DictStrAny
-) -> Tuple[Type, FieldInfo]:
+) -> t.Tuple[t.Type, FieldInfo]:
     return construct_field_info(float, field)
 
 
-@no_type_check
+@t.no_type_check
 @convert_django_field.register(models.DecimalField)
 def convert_field_to_decimal(
     field: Field, **kwargs: DictStrAny
-) -> Tuple[Type, FieldInfo]:
+) -> t.Tuple[t.Type, FieldInfo]:
     return construct_field_info(Decimal, field)
 
 
-@no_type_check
+@t.no_type_check
 @convert_django_field.register(models.BooleanField)
 def convert_field_to_boolean(
     field: Field, **kwargs: DictStrAny
-) -> Tuple[Type, FieldInfo]:
+) -> t.Tuple[t.Type, FieldInfo]:
     return construct_field_info(bool, field)
 
 
-@no_type_check
+@t.no_type_check
 @convert_django_field.register(models.NullBooleanField)
 def convert_field_to_null_boolean(
     field: Field, **kwargs: DictStrAny
-) -> Tuple[Type, FieldInfo]:
+) -> t.Tuple[t.Type, FieldInfo]:
     return construct_field_info(bool, field)
 
 
-@no_type_check
+@t.no_type_check
 @convert_django_field.register(models.DurationField)
 def convert_field_to_time_delta(
     field: Field, **kwargs: DictStrAny
-) -> Tuple[Type, FieldInfo]:
+) -> t.Tuple[t.Type, FieldInfo]:
     return construct_field_info(datetime.timedelta, field)
 
 
-@no_type_check
+@t.no_type_check
 @convert_django_field.register(models.DateTimeField)
 def convert_datetime_to_string(
     field: Field, **kwargs: DictStrAny
-) -> Tuple[Type, FieldInfo]:
+) -> t.Tuple[t.Type, FieldInfo]:
     return construct_field_info(datetime.datetime, field)
 
 
-@no_type_check
+@t.no_type_check
 @convert_django_field.register(models.DateField)
 def convert_date_to_string(
     field: Field, **kwargs: DictStrAny
-) -> Tuple[Type, FieldInfo]:
+) -> t.Tuple[t.Type, FieldInfo]:
     return construct_field_info(datetime.date, field)
 
 
-@no_type_check
+@t.no_type_check
 @convert_django_field.register(models.TimeField)
 def convert_time_to_string(
     field: Field, **kwargs: DictStrAny
-) -> Tuple[Type, FieldInfo]:
+) -> t.Tuple[t.Type, FieldInfo]:
     return construct_field_info(datetime.time, field)
 
 
-@no_type_check
+@t.no_type_check
 @convert_django_field.register(models.OneToOneRel)
 def convert_one_to_one_field_to_django_model(
     field: Field, registry=None, depth=0, **kwargs: DictStrAny
-) -> Tuple[Type, FieldInfo]:
+) -> t.Tuple[t.Type, FieldInfo]:
     return construct_relational_field_info(field, registry=registry, depth=depth)
 
 
-@no_type_check
+@t.no_type_check
 @convert_django_field.register(models.ManyToManyField)
 @convert_django_field.register(models.ManyToManyRel)
 @convert_django_field.register(models.ManyToOneRel)
 def convert_field_to_list_or_connection(
     field: Field, registry=None, depth=0, skip_registry=False, **kwargs: DictStrAny
-) -> Tuple[Type, FieldInfo]:
+) -> t.Tuple[t.Type, FieldInfo]:
     if depth > 0:
         return construct_related_field_schema(
             field, depth=depth, registry=registry, skip_registry=skip_registry
@@ -401,16 +416,16 @@ def convert_field_to_list_or_connection(
     return construct_relational_field_info(field, registry=registry, depth=depth)
 
 
-@no_type_check
+@t.no_type_check
 @convert_django_field.register(models.OneToOneField)
 @convert_django_field.register(models.ForeignKey)
 def convert_field_to_django_model(
     field: Field,
-    registry: Optional[SchemaRegister] = None,
+    registry: t.Optional[SchemaRegister] = None,
     depth: int = 0,
     skip_registry: bool = False,
     **kwargs: DictStrAny,
-) -> Tuple[Type, FieldInfo]:
+) -> t.Tuple[t.Type, FieldInfo]:
     if depth > 0:
         return construct_related_field_schema(
             field,
@@ -421,48 +436,48 @@ def convert_field_to_django_model(
     return construct_relational_field_info(field, registry=registry, depth=depth)
 
 
-@no_type_check
+@t.no_type_check
 @convert_django_field.register(ArrayField)
 def convert_postgres_array_to_list(
     field: Field, **kwargs: DictStrAny
-) -> Tuple[Type, FieldInfo]:
+) -> t.Tuple[t.Type, FieldInfo]:
     inner_type, field_info = convert_django_field(field.base_field)
     if not isinstance(inner_type, list):
-        inner_type = List[inner_type]  # type: ignore
+        inner_type = t.List[inner_type]  # type: ignore
     return inner_type, field_info
 
 
-@no_type_check
+@t.no_type_check
 @convert_django_field.register(HStoreField)
 @convert_django_field.register(JSONField)
 def convert_postgres_field_to_string(
     field: Field, **kwargs: DictStrAny
-) -> Tuple[Type, FieldInfo]:
+) -> t.Tuple[t.Type, FieldInfo]:
     python_type = Json
     if field.null:
-        python_type = Optional[Json]
+        python_type = t.Optional[Json]
     return construct_field_info(python_type, field)
 
 
-@no_type_check
+@t.no_type_check
 @convert_django_field.register(RangeField)
 def convert_postgres_range_to_string(
     field: Field, **kwargs: DictStrAny
-) -> Tuple[Type, FieldInfo]:
+) -> t.Tuple[t.Type, FieldInfo]:
     inner_type, field_info = convert_django_field(field.base_field)
     if not isinstance(inner_type, list):
-        inner_type = List[inner_type]  # type: ignore
+        inner_type = t.List[inner_type]  # type: ignore
     return inner_type, field_info
 
 
 if django.VERSION >= (3, 1):
 
-    @no_type_check
+    @t.no_type_check
     @convert_django_field.register(models.JSONField)
     def convert_field_to_json_string(
         field: Field, **kwargs: DictStrAny
-    ) -> Tuple[Type, FieldInfo]:
+    ) -> t.Tuple[t.Type, FieldInfo]:
         python_type = Json
         if field.null:
-            python_type = Optional[Json]
+            python_type = t.Optional[Json]
         return construct_field_info(python_type, field)
