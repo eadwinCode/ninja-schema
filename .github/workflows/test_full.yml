@@ -24,8 +24,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install core
         run: pip install "Django${{ matrix.django-version }}" pytest pytest-django
-      - name: Install tests
-        run: pip install
       - name: Install Pydantic v1
         if: matrix.pydantic-version == 'pydantic-v1'
         run: pip install "pydantic>=1.10.0,<2.0.0" pydantic[email]
