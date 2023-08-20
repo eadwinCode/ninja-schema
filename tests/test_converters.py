@@ -5,6 +5,7 @@ import django
 import pytest
 from django.db import models
 from django.db.models import Manager
+from pydantic import ValidationError
 
 from ninja_schema import ModelSchema
 from tests.models import Week
@@ -238,7 +239,7 @@ def test_django_31_fields():
         },
         "required": ["jsonfield", "positivebigintegerfield"],
     }
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         ModelNewFieldsSchema(id=1, jsonfield={"any": "data"}, positivebigintegerfield=1)
 
     obj = ModelNewFieldsSchema(

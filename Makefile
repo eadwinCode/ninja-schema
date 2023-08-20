@@ -16,14 +16,13 @@ install: ## Install dependencies
 lint: ## Run code linters
 	make clean
 	black --check ninja_schema tests
-	isort --check ninja_schema tests
-	flake8 ninja_schema tests
+	ruff check ninja_schema tests
 	mypy  ninja_schema
 
 fmt format: ## Run code formatters
 	make clean
 	black ninja_schema tests
-	isort ninja_schema tests
+	ruff check --fix ninja_schema tests
 
 test: ## Run tests
 	make clean

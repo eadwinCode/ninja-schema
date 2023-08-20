@@ -4,7 +4,8 @@ from django.db.models import Model
 
 from ..errors import ConfigError
 from ..types import DictStrAny
-from .schema_registry import SchemaRegister, registry as schema_registry
+from .schema_registry import SchemaRegister
+from .schema_registry import registry as schema_registry
 
 if TYPE_CHECKING:
     from .model_schema import ModelSchema
@@ -48,17 +49,17 @@ class SchemaFactory:
         if schema:
             return schema
 
-        model_config_kwargs = dict(
-            model=model,
-            include=fields,
-            exclude=exclude,
-            skip_registry=skip_registry,
-            depth=depth,
-            registry=registry,
-        )
+        model_config_kwargs = {
+            "model": model,
+            "include": fields,
+            "exclude": exclude,
+            "skip_registry": skip_registry,
+            "depth": depth,
+            "registry": registry,
+        }
         model_config = cls.get_model_config(**model_config_kwargs)  # type: ignore
 
-        attrs = dict(Config=model_config)
+        attrs = {"Config": model_config}
 
         new_schema = type(name, (ModelSchema,), attrs)
         new_schema = cast(Type[ModelSchema], new_schema)
