@@ -10,8 +10,9 @@ clean: ## Removing cached python compiled files
 	find . -name \*~  | xargs  rm -fv
 	find . -name __pycache__  | xargs  rm -rfv
 
-install: ## Install dependencies
+install:clean ## Install dependencies
 	flit install --deps develop --symlink
+	pre-commit install -f
 
 lint:fmt ## Run code linters
 	black --check ninja_schema tests
