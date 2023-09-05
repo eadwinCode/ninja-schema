@@ -13,21 +13,17 @@ clean: ## Removing cached python compiled files
 install: ## Install dependencies
 	flit install --deps develop --symlink
 
-lint: ## Run code linters
-	make clean
+lint:fmt ## Run code linters
 	black --check ninja_schema tests
 	ruff check ninja_schema tests
 	mypy  ninja_schema
 
-fmt format: ## Run code formatters
-	make clean
+fmt format:clean ## Run code formatters
 	black ninja_schema tests
 	ruff check --fix ninja_schema tests
 
-test: ## Run tests
-	make clean
+test:clean ## Run tests
 	pytest .
 
-test-cov: ## Run tests with coverage
-	make clean
+test-cov:clean ## Run tests with coverage
 	pytest --cov=ninja_schema --cov-report term-missing tests

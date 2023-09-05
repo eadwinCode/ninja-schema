@@ -40,7 +40,7 @@ if IS_PYDANTIC_V1:
 
 else:
 
-    class DjangoGetter(DjangoGetterMixin):
+    class DjangoGetter(DjangoGetterMixin):  # type:ignore[no-redef]
         __slots__ = ("_obj", "_schema_cls", "_context")
 
         def __init__(self, obj: t.Any, schema_cls: t.Any, context: t.Any = None):

@@ -25,6 +25,10 @@ from .model_validators import ModelValidatorGroup
 from .schema_registry import registry as global_registry
 from .utils.converter import convert_django_field_with_choices
 
+ALL_FIELDS = "__all__"
+
+__all__ = ["ModelSchema"]
+
 if IS_PYDANTIC_V1:
     from pydantic import BaseConfig, BaseModel, PyObject
     from pydantic.class_validators import (
@@ -50,21 +54,7 @@ if IS_PYDANTIC_V1:
         unique_list,
         validate_field_name,
     )
-else:
-    from pydantic import BaseConfig, BaseModel
-    from pydantic._internal._model_construction import ModelMetaclass
-    from pydantic.fields import Field as ModelField
-    from pydantic_core import PydanticUndefined as Undefined
 
-
-if TYPE_CHECKING:
-    from pydantic.class_validators import ValidatorListDict
-
-ALL_FIELDS = "__all__"
-
-__all__ = ["ModelSchema"]
-
-if IS_PYDANTIC_V1:
     namespace_keys = [
         "__config__",
         "__fields__",
@@ -118,7 +108,7 @@ if IS_PYDANTIC_V1:
 
         for base in reversed(bases):
             if base != BaseModel:
-                validators = inherit_validators(base.__validators__, validators)  # type: ignore
+                validators = inherit_validators(base.__validators__, validators)
                 pre_root_validators += base.__pre_root_validators__
                 post_root_validators += base.__post_root_validators__
                 class_vars.update(base.__class_vars__)
@@ -211,7 +201,14 @@ if IS_PYDANTIC_V1:
         )
         return cls
 
+    if TYPE_CHECKING:
+        from pydantic.class_validators import ValidatorListDict
 else:
+    from pydantic import BaseConfig, BaseModel
+    from pydantic._internal._model_construction import ModelMetaclass
+    from pydantic.fields import Field as ModelField
+    from pydantic_core import PydanticUndefined as Undefined
+
     PydanticNamespace = None
 
     def update_class_missing_fields(

@@ -61,10 +61,11 @@ class SchemaFactory:
             "registry": registry,
         }
         cls.get_model_config(**model_config_kwargs)  # type: ignore
-        if IS_PYDANTIC_V1:
-            new_schema = cls._get_schema_v1(name, model_config_kwargs, ModelSchema)
-        else:
-            new_schema = cls._get_schema_v2(name, model_config_kwargs, ModelSchema)
+        new_schema = (
+            cls._get_schema_v1(name, model_config_kwargs, ModelSchema)
+            if IS_PYDANTIC_V1
+            else cls._get_schema_v2(name, model_config_kwargs, ModelSchema)
+        )
 
         new_schema = cast(Type[ModelSchema], new_schema)
         if not skip_registry:
@@ -75,7 +76,7 @@ class SchemaFactory:
     def _get_schema_v1(
         cls, name: str, model_config_kwargs: typing.Dict, model_type: typing.Type
     ) -> Union[Type["ModelSchema"], Type["Schema"], None]:
-        model_config = cls.get_model_config(**model_config_kwargs)  # type: ignore
+        model_config = cls.get_model_config(**model_config_kwargs)
 
         attrs = {"Config": model_config}
 
@@ -87,11 +88,11 @@ class SchemaFactory:
     def _get_schema_v2(
         cls, name: str, model_config_kwargs: typing.Dict, model_type: typing.Type
     ) -> Union[Type["ModelSchema"], Type["Schema"]]:
-        model_config = cls.get_model_config(**model_config_kwargs)  # type: ignore
+        model_config = cls.get_model_config(**model_config_kwargs)
 
         new_schema_string = f"""class {name}(model_type):
             class Config(model_config):
                 pass """
 
         exec(new_schema_string, locals())
-        return locals().get(name)
+        return locals().get(name)  # type:ignore[return-value]
