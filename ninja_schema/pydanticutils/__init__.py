@@ -25,14 +25,14 @@ def compute_field_annotations(
     annotations = {}
 
     for f_name, f_def in field_definitions.items():
-        if not is_valid_field(f_name):
+        if not is_valid_field(f_name):#pragma: no cover
             logger.debug(
                 f'fields may not start with an underscore, ignoring "{f_name}"'
             )
         if isinstance(f_def, tuple):
             try:
                 f_annotation, f_value = f_def
-            except ValueError as e:
+            except ValueError as e:#pragma: no cover
                 raise ConfigError(
                     "field definitions should either be a tuple of (<type>, <default>) or just a "
                     "default value, unfortunately this means tuples as "

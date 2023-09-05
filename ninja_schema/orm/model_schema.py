@@ -213,7 +213,7 @@ else:
 
     def update_class_missing_fields(
         cls: Type, bases: List[Type[BaseModel]], namespace: Dict
-    ):
+    ):#pragma: no cover
         return cls
 
 

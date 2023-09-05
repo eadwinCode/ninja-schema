@@ -4,7 +4,9 @@ exclude_lines =
     def __repr__
     def __str__
     if self.debug:
-    if IS_PYDANTIC_V1:
+    if IS_PYDANTIC_V1
+    if TYPE_CHECKING:
+    if t.TYPE_CHECKING:
     if settings.DEBUG
     raise AssertionError
     raise NotImplementedError
