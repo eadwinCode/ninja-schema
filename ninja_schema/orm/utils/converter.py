@@ -187,10 +187,10 @@ def construct_relational_field_info(
     python_type = inner_type
     if field.one_to_many or field.many_to_many:
         m2m_type = create_m2m_link_type(inner_type, field.related_model)
-        if not IS_PYDANTIC_V1:
-            python_type = t.List[Annotated[inner_type, BeforeValidator(m2m_type.validate)]]  # type: ignore
-        else:
+        if IS_PYDANTIC_V1:
             python_type = t.List[m2m_type]
+        else:
+            python_type = t.List[Annotated[inner_type, BeforeValidator(m2m_type.validate)]]  # type: ignore
 
     field_info = PydanticField(
         default=default,
