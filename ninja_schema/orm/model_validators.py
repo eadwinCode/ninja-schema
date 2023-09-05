@@ -100,4 +100,3 @@ else:
 
     class ModelValidatorGroup:
         pass
-
