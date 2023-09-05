@@ -8,9 +8,11 @@ from django.db.models import Manager
 from pydantic import ValidationError
 
 from ninja_schema import ModelSchema
+from ninja_schema.pydanticutils import IS_PYDANTIC_V1
 from tests.models import Week
 
 
+@pytest.mark.skipif(not IS_PYDANTIC_V1, reason="requires pydantic == 1.6.x")
 def test_inheritance():
     class ParentModel(models.Model):
         parent_field = models.CharField()
@@ -47,6 +49,7 @@ def test_inheritance():
     }
 
 
+@pytest.mark.skipif(not IS_PYDANTIC_V1, reason="requires pydantic == 1.6.x")
 def test_all_fields():
     # test all except relational field
 
@@ -184,6 +187,7 @@ def test_all_fields():
     }
 
 
+@pytest.mark.skipif(not IS_PYDANTIC_V1, reason="requires pydantic == 1.6.x")
 def test_bigautofield():
     # primary key are optional fields when include = __all__
     class ModelBigAuto(models.Model):
@@ -209,6 +213,7 @@ def test_bigautofield():
 @pytest.mark.skipif(
     django.VERSION < (3, 1), reason="json field introduced in django 3.1"
 )
+@pytest.mark.skipif(not IS_PYDANTIC_V1, reason="requires pydantic == 1.6.x")
 def test_django_31_fields():
     class ModelNewFields(models.Model):
         jsonfield = models.JSONField()
@@ -252,6 +257,7 @@ def test_django_31_fields():
     }
 
 
+@pytest.mark.skipif(not IS_PYDANTIC_V1, reason="requires pydantic == 1.6.x")
 def test_relational():
     class Related(models.Model):
         charfield = models.CharField()
@@ -289,6 +295,7 @@ def test_relational():
     }
 
 
+@pytest.mark.skipif(not IS_PYDANTIC_V1, reason="requires pydantic == 1.6.x")
 def test_default():
     class MyModel(models.Model):
         default_static = models.CharField(default="hello")
@@ -316,6 +323,7 @@ def test_default():
     }
 
 
+@pytest.mark.skipif(not IS_PYDANTIC_V1, reason="requires pydantic == 1.6.x")
 def test_manytomany():
     class Foo(models.Model):
         f = models.CharField()
@@ -351,6 +359,7 @@ def test_manytomany():
     assert data == {"id": 1, "m2m": [1]}
 
 
+@pytest.mark.skipif(not IS_PYDANTIC_V1, reason="requires pydantic == 1.6.x")
 def test_manytomany_validation():
     bar = Mock()
     bar.pk = "555555s"

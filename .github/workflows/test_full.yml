@@ -13,6 +13,8 @@ jobs:
       matrix:
         python-version: ['3.8', '3.9', '3.10', '3.11']
         django-version: ['<3.0', '<3.1', '<3.2', '<3.3', '<4.1', '<4.2']
+        pydantic-version: [ "pydantic-v1", "pydantic-v2" ]
+      fail-fast: false
 
     steps:
       - uses: actions/checkout@v2
@@ -21,9 +23,13 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install core
-        run: pip install "Django${{ matrix.django-version }}" "pydantic >=1.6.2,!=1.7,!=1.7.1,!=1.7.2,!=1.7.3,!=1.8,!=1.8.1,<2.0.0" pydantic[email]
-      - name: Install tests
-        run: pip install pytest pytest-django
+        run: pip install "Django${{ matrix.django-version }}" pytest pytest-django
+      - name: Install Pydantic v1
+        if: matrix.pydantic-version == 'pydantic-v1'
+        run: pip install "pydantic>=1.10.0,<2.0.0" pydantic[email]
+      - name: Install Pydantic v2
+        if: matrix.pydantic-version == 'pydantic-v2'
+        run: pip install "pydantic>=2.0.2,<3.0.0" pydantic[email]
       - name: Test
         run: pytest
   codestyle:
@@ -34,7 +40,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v1
         with:
-          python-version: 3.9
+          python-version: 3.8
       - name: Install Flit
         run: pip install flit
       - name: Install Dependencies

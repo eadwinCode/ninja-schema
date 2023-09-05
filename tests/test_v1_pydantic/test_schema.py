@@ -1,11 +1,13 @@
 from typing import List
 from unittest.mock import Mock
 
+import pytest
 from django.db.models import Manager, QuerySet
 from django.db.models.fields.files import ImageFieldFile
 from pydantic import Field
 
 from ninja_schema import Schema
+from ninja_schema.pydanticutils import IS_PYDANTIC_V1
 
 
 class FakeManager(Manager):
@@ -57,6 +59,7 @@ class UserSchema(Schema):
     avatar: str = None
 
 
+@pytest.mark.skipif(not IS_PYDANTIC_V1, reason="requires pydantic == 1.6.x")
 def test_schema():
     user = User()
     schema = UserSchema.from_orm(user)
@@ -68,6 +71,7 @@ def test_schema():
     }
 
 
+@pytest.mark.skipif(not IS_PYDANTIC_V1, reason="requires pydantic == 1.6.x")
 def test_schema_with_image():
     user = User()
     field = Mock()

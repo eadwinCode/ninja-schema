@@ -2,15 +2,19 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from pydantic.utils import is_valid_field
+from pydantic.version import VERSION as _PYDANTIC_VERSION
 
 from ..errors import ConfigError
 
 if TYPE_CHECKING:
     from pydantic.typing import DictStrAny
 
-__all__ = ["compute_field_annotations"]
+__all__ = ["compute_field_annotations", "IS_PYDANTIC_V1", "PYDANTIC_VERSION"]
 
 logger = logging.getLogger()
+
+PYDANTIC_VERSION = list(map(int, _PYDANTIC_VERSION.split(".")))[:2]
+IS_PYDANTIC_V1 = PYDANTIC_VERSION[0] == 1
 
 
 def compute_field_annotations(
@@ -21,14 +25,14 @@ def compute_field_annotations(
     annotations = {}
 
     for f_name, f_def in field_definitions.items():
-        if not is_valid_field(f_name):
+        if not is_valid_field(f_name):  # pragma: no cover
             logger.debug(
                 f'fields may not start with an underscore, ignoring "{f_name}"'
             )
         if isinstance(f_def, tuple):
             try:
                 f_annotation, f_value = f_def
-            except ValueError as e:
+            except ValueError as e:  # pragma: no cover
                 raise ConfigError(
                     "field definitions should either be a tuple of (<type>, <default>) or just a "
                     "default value, unfortunately this means tuples as "

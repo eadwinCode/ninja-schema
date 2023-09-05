@@ -1,5 +1,19 @@
 from django.db import models
 
+SEMESTER_CHOICES = (
+    ("1", "One"),
+    ("2", "Two"),
+    ("3", "Three"),
+)
+
+
+class Student(models.Model):
+    semester = models.CharField(max_length=20, choices=SEMESTER_CHOICES, default="1")
+
+
+class StudentEmail(models.Model):
+    email = models.EmailField(null=False, blank=False)
+
 
 class Category(models.Model):
     name = models.CharField(max_length=100)

@@ -40,7 +40,7 @@ classifiers = [
 
 requires = [
     "Django >=2.0",
-    "pydantic >=1.6.2,!=1.7,!=1.7.1,!=1.7.2,!=1.7.3,!=1.8,!=1.8.1,<2.0.0",
+    "pydantic>=1.7.4,!=1.8,!=1.8.1,!=2.0.0,!=2.0.1,!=2.1.0,<3.0.0",
     "pydantic[email]"
 ]
 description-file = "README.md"
@@ -56,10 +56,13 @@ test = [
     "pytest-cov",
     "pytest-django",
     "pytest-asyncio",
-    "mypy ==1.4.1",
+    "mypy ==1.5.1",
     "ruff ==0.0.275",
     "black == 23.7.0",
     "django-stubs",
+]
+dev = [
+    "pre-commit"
 ]
 doc = []
 
@@ -85,3 +88,29 @@ ignore = [
 
 [tool.ruff.isort]
 known-third-party = ["pydantic", "Django"]
+
+[tool.mypy]
+show_column_numbers = true
+
+follow_imports = 'normal'
+ignore_missing_imports = true
+
+# be strict
+disallow_untyped_calls = true
+warn_return_any = true
+strict_optional = true
+warn_no_return = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+
+disallow_untyped_defs = true
+check_untyped_defs = true
+no_implicit_reexport = true
+
+[[tool.mypy.overrides]]
+module = "ninja_schema.orm.utils.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "ninja_schema.orm.model_schema"
+ignore_errors = true
