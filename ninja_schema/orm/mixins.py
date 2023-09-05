@@ -57,4 +57,4 @@ if not IS_PYDANTIC_V1:
 
 
 class SchemaMixins(BaseMixins):
-    """Base Schema Mixin"""
+    pass
