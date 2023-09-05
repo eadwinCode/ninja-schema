@@ -271,7 +271,18 @@ def test_bigautofield():
             model = ModelBigAuto
 
     print(ModelBigAutoSchema.schema())
-    assert ModelBigAutoSchema.schema() == {'properties': {'bigautofiled': {'anyOf': [{'type': 'integer'}, {'type': 'null'}], 'default': None, 'description': '', 'title': 'Bigautofiled'}}, 'title': 'ModelBigAutoSchema', 'type': 'object'}
+    assert ModelBigAutoSchema.schema() == {
+        "properties": {
+            "bigautofiled": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "default": None,
+                "description": "",
+                "title": "Bigautofiled",
+            }
+        },
+        "title": "ModelBigAutoSchema",
+        "type": "object",
+    }
 
 
 @pytest.mark.skipif(
@@ -291,7 +302,31 @@ def test_django_31_fields():
             model = ModelNewFields
 
     print(ModelNewFieldsSchema.schema())
-    assert ModelNewFieldsSchema.schema() == {'properties': {'id': {'anyOf': [{'type': 'integer'}, {'type': 'null'}], 'default': None, 'description': '', 'title': 'Id'}, 'jsonfield': {'contentMediaType': 'application/json', 'contentSchema': {}, 'description': '', 'title': 'Jsonfield', 'type': 'string'}, 'positivebigintegerfield': {'description': '', 'title': 'Positivebigintegerfield', 'type': 'integer'}}, 'required': ['jsonfield', 'positivebigintegerfield'], 'title': 'ModelNewFieldsSchema', 'type': 'object'}
+    assert ModelNewFieldsSchema.schema() == {
+        "properties": {
+            "id": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "default": None,
+                "description": "",
+                "title": "Id",
+            },
+            "jsonfield": {
+                "contentMediaType": "application/json",
+                "contentSchema": {},
+                "description": "",
+                "title": "Jsonfield",
+                "type": "string",
+            },
+            "positivebigintegerfield": {
+                "description": "",
+                "title": "Positivebigintegerfield",
+                "type": "integer",
+            },
+        },
+        "required": ["jsonfield", "positivebigintegerfield"],
+        "title": "ModelNewFieldsSchema",
+        "type": "object",
+    }
 
     with pytest.raises(ValidationError):
         ModelNewFieldsSchema(id=1, jsonfield={"any": "data"}, positivebigintegerfield=1)
@@ -326,21 +361,36 @@ def test_relational():
         class Config:
             model = TestModel
 
-    print(TestSchema.schema())
+    print(json.dumps(TestSchema.schema(), sort_keys=False, indent=4))
     assert TestSchema.schema() == {
-        "title": "TestSchema",
-        "type": "object",
         "properties": {
-            "id": {"extra": {}, "title": "Id", "type": "integer"},
-            "onetoonefield_id": {"title": "Onetoonefield", "type": "integer"},
-            "foreignkey_id": {"title": "Foreignkey", "type": "integer"},
+            "id": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "default": None,
+                "description": "",
+                "title": "Id",
+            },
+            "onetoonefield_id": {
+                "description": "",
+                "title": "Onetoonefield",
+                "type": "integer",
+            },
+            "foreignkey_id": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "default": None,
+                "description": "",
+                "title": "Foreignkey",
+            },
             "manytomanyfield": {
+                "description": "",
+                "items": {"type": "integer"},
                 "title": "Manytomanyfield",
                 "type": "array",
-                "items": {"type": "integer"},
             },
         },
         "required": ["onetoonefield_id", "manytomanyfield"],
+        "title": "TestSchema",
+        "type": "object",
     }
 
 
@@ -357,14 +407,14 @@ def test_default():
         class Config:
             model = MyModel
 
-    MyModelSchema.schema()
+    print(json.dumps(MyModelSchema.schema(), sort_keys=False, indent=4))
     assert MyModelSchema.schema() == {
         "properties": {
             "id": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
                 "default": None,
                 "description": "",
                 "title": "Id",
-                "type": "integer",
             },
             "default_static": {
                 "default": "hello",

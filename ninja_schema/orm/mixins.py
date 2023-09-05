@@ -8,11 +8,9 @@ from ..types import DictStrAny
 from .getters import DjangoGetter
 
 if not IS_PYDANTIC_V1:
-    from pydantic import model_validator
+    from pydantic import BaseModel, model_validator
     from pydantic.json_schema import GenerateJsonSchema
     from pydantic_core.core_schema import ValidationInfo
-
-S = t.TypeVar("S", bound="Schema")
 
 
 class SchemaMixins:
@@ -31,7 +29,7 @@ class SchemaMixins:
             return values
 
         @classmethod
-        def from_orm(cls: t.Type[S], obj: t.Any, **options: t.Any) -> S:
+        def from_orm(cls, obj: t.Any, **options: t.Any) -> BaseModel:
             return cls.model_validate(obj, **options)
 
         def dict(self, *a: t.Any, **kw: t.Any) -> DictStrAny:

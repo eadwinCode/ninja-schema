@@ -11,7 +11,8 @@ from django.db import models
 from django.db.models.fields import Field
 from django.utils.encoding import force_str
 from pydantic import AnyUrl, EmailStr, IPvAnyAddress, Json
-from pydantic.fields import FieldInfo
+from pydantic.fields import Field as PydanticField
+from typing_extensions import Annotated
 
 from ...compat import ArrayField, HStoreField, JSONField, RangeField
 from ...pydanticutils import IS_PYDANTIC_V1
@@ -23,7 +24,7 @@ from ..schema_registry import registry as global_registry
 try:
     from pydantic.fields import Undefined
 except Exception:
-    from pydantic_core import CoreSchema, core_schema
+    from pydantic import BeforeValidator
     from pydantic_core import PydanticUndefined as Undefined
 
 if t.TYPE_CHECKING:
@@ -102,7 +103,7 @@ def convert_django_field_with_choices(
     registry: SchemaRegister,
     depth: int = 0,
     skip_registry: bool = False,
-) -> t.Tuple[t.Type, FieldInfo]:
+) -> t.Tuple[t.Type, PydanticField]:
     converted = convert_django_field(
         field, registry=registry, depth=depth, skip_registry=skip_registry
     )
@@ -110,7 +111,9 @@ def convert_django_field_with_choices(
 
 
 @singledispatch
-def convert_django_field(field: Field, **kwargs: t.Any) -> t.Tuple[t.Type, FieldInfo]:
+def convert_django_field(
+    field: Field, **kwargs: t.Any
+) -> t.Tuple[t.Type, PydanticField]:
     raise Exception(
         "Don't know how to convert the Django field %s (%s)" % (field, field.__class__)
     )
@@ -121,19 +124,9 @@ def create_m2m_link_type(
     type_: t.Type[TModel], related_model: models.Model
 ) -> t.Type[TModel]:
     class M2MLink(type_):  # type: ignore
-        if IS_PYDANTIC_V1:
-
-            @classmethod
-            def __get_validators__(cls):
-                yield cls.validate
-
-        else:
-
-            @classmethod
-            def __get_pydantic_core_schema__(
-                cls, source_type: t.Any, handler: t.Any
-            ) -> CoreSchema:
-                return core_schema.no_info_plain_validator_function(cls.validate)
+        @classmethod
+        def __get_validators__(cls):
+            yield cls.validate
 
         @classmethod
         def validate(cls, v):
@@ -149,7 +142,7 @@ def create_m2m_link_type(
 @t.no_type_check
 def construct_related_field_schema(
     field: Field, *, registry: SchemaRegister, depth: int, skip_registry=False
-) -> t.Tuple[t.Type["ModelSchema"], FieldInfo]:
+) -> t.Tuple[t.Type["ModelSchema"], PydanticField]:
     # create a sample config and return the type
     model = field.related_model
     schema = SchemaFactory.create_schema(
@@ -159,11 +152,11 @@ def construct_related_field_schema(
     if not field.concrete and field.auto_created or field.null:
         default = None
     if isinstance(field, models.ManyToManyField):
-        schema = List[schema]  # type: ignore
+        schema = t.List[schema]  # type: ignore
 
     return (
         schema,
-        FieldInfo(
+        PydanticField(
             default=default,
             description=force_str(
                 getattr(field, "help_text", field.verbose_name)
@@ -180,7 +173,7 @@ def construct_relational_field_info(
     registry: SchemaRegister,
     depth: int = 0,
     __module__: str = __name__,
-) -> t.Tuple[t.Type, FieldInfo]:
+) -> t.Tuple[t.Type, PydanticField]:
     default: t.Any = ...
     field_props = FieldConversionProps(field)
 
@@ -194,9 +187,12 @@ def construct_relational_field_info(
     python_type = inner_type
     if field.one_to_many or field.many_to_many:
         m2m_type = create_m2m_link_type(inner_type, field.related_model)
-        python_type = t.List[m2m_type]  # type: ignore
+        if not IS_PYDANTIC_V1:
+            python_type = t.List[Annotated[inner_type, BeforeValidator(m2m_type.validate)]]  # type: ignore
+        else:
+            python_type = t.List[m2m_type]
 
-    field_info = FieldInfo(
+    field_info = PydanticField(
         default=default,
         alias=field_props.alias,
         default_factory=None,
@@ -214,7 +210,7 @@ def construct_field_info(
     depth: int = 0,
     __module__: str = __name__,
     is_custom_type: bool = False,
-) -> t.Tuple[t.Type, FieldInfo]:
+) -> t.Tuple[t.Type, PydanticField]:
     default = ...
     default_factory = None
 
@@ -245,7 +241,7 @@ def construct_field_info(
 
     return (
         python_type,
-        FieldInfo(
+        PydanticField(
             default=default,
             alias=field_props.alias,
             default_factory=default_factory,
@@ -265,7 +261,7 @@ def construct_field_info(
 @convert_django_field.register(models.FilePathField)
 def convert_field_to_string(
     field: Field, **kwargs: DictStrAny
-) -> t.Tuple[t.Type, FieldInfo]:
+) -> t.Tuple[t.Type, PydanticField]:
     return construct_field_info(str, field)
 
 
@@ -273,7 +269,7 @@ def convert_field_to_string(
 @convert_django_field.register(models.EmailField)
 def convert_field_to_email_string(
     field: Field, **kwargs: DictStrAny
-) -> t.Tuple[t.Type, FieldInfo]:
+) -> t.Tuple[t.Type, PydanticField]:
     return construct_field_info(EmailStr, field, is_custom_type=True)
 
 
@@ -281,7 +277,7 @@ def convert_field_to_email_string(
 @convert_django_field.register(models.URLField)
 def convert_field_to_url_string(
     field: Field, **kwargs: DictStrAny
-) -> t.Tuple[t.Type, FieldInfo]:
+) -> t.Tuple[t.Type, PydanticField]:
     return construct_field_info(AnyUrl, field, is_custom_type=True)
 
 
@@ -289,7 +285,7 @@ def convert_field_to_url_string(
 @convert_django_field.register(models.AutoField)
 def convert_field_to_id(
     field: Field, **kwargs: DictStrAny
-) -> t.Tuple[t.Type, FieldInfo]:
+) -> t.Tuple[t.Type, PydanticField]:
     return construct_field_info(int, field)
 
 
@@ -297,7 +293,7 @@ def convert_field_to_id(
 @convert_django_field.register(models.UUIDField)
 def convert_field_to_uuid(
     field: Field, **kwargs: DictStrAny
-) -> t.Tuple[t.Type, FieldInfo]:
+) -> t.Tuple[t.Type, PydanticField]:
     return construct_field_info(UUID, field)
 
 
@@ -309,7 +305,7 @@ def convert_field_to_uuid(
 @convert_django_field.register(models.IntegerField)
 def convert_field_to_int(
     field: Field, **kwargs: DictStrAny
-) -> t.Tuple[t.Type, FieldInfo]:
+) -> t.Tuple[t.Type, PydanticField]:
     return construct_field_info(int, field)
 
 
@@ -317,7 +313,7 @@ def convert_field_to_int(
 @convert_django_field.register(models.BinaryField)
 def convert_field_to_byte(
     field: Field, **kwargs: DictStrAny
-) -> t.Tuple[t.Type, FieldInfo]:
+) -> t.Tuple[t.Type, PydanticField]:
     return construct_field_info(bytes, field)
 
 
@@ -326,7 +322,7 @@ def convert_field_to_byte(
 @convert_django_field.register(models.GenericIPAddressField)
 def convert_field_to_ipaddress(
     field: Field, **kwargs: DictStrAny
-) -> t.Tuple[t.Type, FieldInfo]:
+) -> t.Tuple[t.Type, PydanticField]:
     return construct_field_info(IPvAnyAddress, field)
 
 
@@ -334,7 +330,7 @@ def convert_field_to_ipaddress(
 @convert_django_field.register(models.FloatField)
 def convert_field_to_float(
     field: Field, **kwargs: DictStrAny
-) -> t.Tuple[t.Type, FieldInfo]:
+) -> t.Tuple[t.Type, PydanticField]:
     return construct_field_info(float, field)
 
 
@@ -342,7 +338,7 @@ def convert_field_to_float(
 @convert_django_field.register(models.DecimalField)
 def convert_field_to_decimal(
     field: Field, **kwargs: DictStrAny
-) -> t.Tuple[t.Type, FieldInfo]:
+) -> t.Tuple[t.Type, PydanticField]:
     return construct_field_info(Decimal, field)
 
 
@@ -350,7 +346,7 @@ def convert_field_to_decimal(
 @convert_django_field.register(models.BooleanField)
 def convert_field_to_boolean(
     field: Field, **kwargs: DictStrAny
-) -> t.Tuple[t.Type, FieldInfo]:
+) -> t.Tuple[t.Type, PydanticField]:
     return construct_field_info(bool, field)
 
 
@@ -358,7 +354,7 @@ def convert_field_to_boolean(
 @convert_django_field.register(models.NullBooleanField)
 def convert_field_to_null_boolean(
     field: Field, **kwargs: DictStrAny
-) -> t.Tuple[t.Type, FieldInfo]:
+) -> t.Tuple[t.Type, PydanticField]:
     return construct_field_info(bool, field)
 
 
@@ -366,7 +362,7 @@ def convert_field_to_null_boolean(
 @convert_django_field.register(models.DurationField)
 def convert_field_to_time_delta(
     field: Field, **kwargs: DictStrAny
-) -> t.Tuple[t.Type, FieldInfo]:
+) -> t.Tuple[t.Type, PydanticField]:
     return construct_field_info(datetime.timedelta, field)
 
 
@@ -374,7 +370,7 @@ def convert_field_to_time_delta(
 @convert_django_field.register(models.DateTimeField)
 def convert_datetime_to_string(
     field: Field, **kwargs: DictStrAny
-) -> t.Tuple[t.Type, FieldInfo]:
+) -> t.Tuple[t.Type, PydanticField]:
     return construct_field_info(datetime.datetime, field)
 
 
@@ -382,7 +378,7 @@ def convert_datetime_to_string(
 @convert_django_field.register(models.DateField)
 def convert_date_to_string(
     field: Field, **kwargs: DictStrAny
-) -> t.Tuple[t.Type, FieldInfo]:
+) -> t.Tuple[t.Type, PydanticField]:
     return construct_field_info(datetime.date, field)
 
 
@@ -390,7 +386,7 @@ def convert_date_to_string(
 @convert_django_field.register(models.TimeField)
 def convert_time_to_string(
     field: Field, **kwargs: DictStrAny
-) -> t.Tuple[t.Type, FieldInfo]:
+) -> t.Tuple[t.Type, PydanticField]:
     return construct_field_info(datetime.time, field)
 
 
@@ -398,7 +394,7 @@ def convert_time_to_string(
 @convert_django_field.register(models.OneToOneRel)
 def convert_one_to_one_field_to_django_model(
     field: Field, registry=None, depth=0, **kwargs: DictStrAny
-) -> t.Tuple[t.Type, FieldInfo]:
+) -> t.Tuple[t.Type, PydanticField]:
     return construct_relational_field_info(field, registry=registry, depth=depth)
 
 
@@ -408,7 +404,7 @@ def convert_one_to_one_field_to_django_model(
 @convert_django_field.register(models.ManyToOneRel)
 def convert_field_to_list_or_connection(
     field: Field, registry=None, depth=0, skip_registry=False, **kwargs: DictStrAny
-) -> t.Tuple[t.Type, FieldInfo]:
+) -> t.Tuple[t.Type, PydanticField]:
     if depth > 0:
         return construct_related_field_schema(
             field, depth=depth, registry=registry, skip_registry=skip_registry
@@ -425,7 +421,7 @@ def convert_field_to_django_model(
     depth: int = 0,
     skip_registry: bool = False,
     **kwargs: DictStrAny,
-) -> t.Tuple[t.Type, FieldInfo]:
+) -> t.Tuple[t.Type, PydanticField]:
     if depth > 0:
         return construct_related_field_schema(
             field,
@@ -440,7 +436,7 @@ def convert_field_to_django_model(
 @convert_django_field.register(ArrayField)
 def convert_postgres_array_to_list(
     field: Field, **kwargs: DictStrAny
-) -> t.Tuple[t.Type, FieldInfo]:
+) -> t.Tuple[t.Type, PydanticField]:
     inner_type, field_info = convert_django_field(field.base_field)
     if not isinstance(inner_type, list):
         inner_type = t.List[inner_type]  # type: ignore
@@ -452,7 +448,7 @@ def convert_postgres_array_to_list(
 @convert_django_field.register(JSONField)
 def convert_postgres_field_to_string(
     field: Field, **kwargs: DictStrAny
-) -> t.Tuple[t.Type, FieldInfo]:
+) -> t.Tuple[t.Type, PydanticField]:
     python_type = Json
     if field.null:
         python_type = t.Optional[Json]
@@ -463,7 +459,7 @@ def convert_postgres_field_to_string(
 @convert_django_field.register(RangeField)
 def convert_postgres_range_to_string(
     field: Field, **kwargs: DictStrAny
-) -> t.Tuple[t.Type, FieldInfo]:
+) -> t.Tuple[t.Type, PydanticField]:
     inner_type, field_info = convert_django_field(field.base_field)
     if not isinstance(inner_type, list):
         inner_type = t.List[inner_type]  # type: ignore
@@ -476,7 +472,7 @@ if django.VERSION >= (3, 1):
     @convert_django_field.register(models.JSONField)
     def convert_field_to_json_string(
         field: Field, **kwargs: DictStrAny
-    ) -> t.Tuple[t.Type, FieldInfo]:
+    ) -> t.Tuple[t.Type, PydanticField]:
         python_type = Json
         if field.null:
             python_type = t.Optional[Json]

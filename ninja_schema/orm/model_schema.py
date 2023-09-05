@@ -64,24 +64,22 @@ ALL_FIELDS = "__all__"
 
 __all__ = ["ModelSchema"]
 
-
-namespace_keys = [
-    "__config__",
-    "__fields__",
-    "__validators__",
-    "__pre_root_validators__",
-    "__post_root_validators__",
-    "__schema_cache__",
-    "__json_encoder__",
-    "__custom_root_type__",
-    "__private_attributes__",
-    "__slots__",
-    "__hash__",
-    "__class_vars__",
-    "__annotations__",
-]
-
 if IS_PYDANTIC_V1:
+    namespace_keys = [
+        "__config__",
+        "__fields__",
+        "__validators__",
+        "__pre_root_validators__",
+        "__post_root_validators__",
+        "__schema_cache__",
+        "__json_encoder__",
+        "__custom_root_type__",
+        "__private_attributes__",
+        "__slots__",
+        "__hash__",
+        "__class_vars__",
+        "__annotations__",
+    ]
 
     class PydanticNamespace:
         __annotations__: Dict = {}
@@ -222,9 +220,16 @@ else:
         return cls
 
 
+class ModelSchemaConfigAdapter:
+    def __init__(self, config: Dict) -> None:
+        self.__dict__ = config
+
+
 class ModelSchemaConfig:
     def __init__(
-        self, schema_class_name: str, options: Optional[Dict[str, Any]] = None
+        self,
+        schema_class_name: str,
+        options: Optional[Union[Dict[str, Any], ModelSchemaConfigAdapter]] = None,
     ):
         self.model = getattr(options, "model", None)
         _include = getattr(options, "include", None) or ALL_FIELDS
@@ -319,10 +324,17 @@ class ModelSchemaMetaclass(ModelMetaclass):
         bases: tuple,
         namespace: dict,
     ):
-        if bases == (SchemaBaseModel,) or not namespace.get("Config"):
+        if bases == (SchemaBaseModel,) or not namespace.get(
+            "Config", namespace.get("model_config")
+        ):
             return super().__new__(mcs, name, bases, namespace)
 
         config = namespace.get("Config")
+        if not config:
+            model_config = namespace.get("model_config")
+            if model_config:
+                config = ModelSchemaConfigAdapter(model_config)
+
         config_instance = None
 
         if config:

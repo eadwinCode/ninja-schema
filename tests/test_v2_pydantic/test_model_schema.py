@@ -17,6 +17,7 @@ class TestModelSchema:
                 model = Event
                 include = "__all__"
 
+        print(EventSchema.schema())
         assert EventSchema.schema() == {
             "properties": {
                 "id": {
@@ -31,7 +32,7 @@ class TestModelSchema:
                     "title": "Title",
                     "type": "string",
                 },
-                "category": {
+                "category_id": {
                     "anyOf": [{"type": "integer"}, {"type": "null"}],
                     "default": None,
                     "description": "",
@@ -432,7 +433,7 @@ class TestModelSchema:
                     "title": "Title",
                     "type": "string",
                 },
-                "category": {
+                "category_id": {
                     "anyOf": [{"type": "integer"}, {"type": "null"}],
                     "default": None,
                     "description": "",
@@ -493,3 +494,23 @@ class TestModelSchema:
         class AbstractBaseModelSchema(ModelSchema):
             class Config:
                 ninja_schema_abstract = True
+
+    @pytest.mark.skipif(IS_PYDANTIC_V1, reason="requires pydantic == 2.1.x")
+    def test_model_validator_with_new_model_config(self):
+        from pydantic import ConfigDict
+
+        class EventWithNewModelConfig(ModelSchema):
+            model_config = ConfigDict(
+                model=Event,
+                include=[
+                    "title",
+                    "start_date",
+                ],
+            )
+
+            @model_validator("title")
+            def validate_title(cls, value):
+                return f"{value} - value cleaned"
+
+        event = EventWithNewModelConfig(start_date="2021-06-12", title="PyConf 2021")
+        assert "value cleaned" in event.title

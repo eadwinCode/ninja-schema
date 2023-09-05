@@ -27,10 +27,10 @@ class TestCustomFields:
             },
             "properties": {
                 "id": {
+                    "anyOf": [{"type": "integer"}, {"type": "null"}],
                     "default": None,
                     "description": "",
                     "title": "Id",
-                    "type": "integer",
                 },
                 "semester": {
                     "allOf": [{"$ref": "#/$defs/SemesterEnum"}],
@@ -58,10 +58,10 @@ class TestCustomFields:
         assert StudentEmailSchema.schema() == {
             "properties": {
                 "id": {
+                    "anyOf": [{"type": "integer"}, {"type": "null"}],
                     "default": None,
                     "description": "",
                     "title": "Id",
-                    "type": "integer",
                 },
                 "email": {
                     "description": "",
