@@ -98,5 +98,5 @@ else:
         )
         return field_validator(__field, *fields, mode=mode, check_fields=check_fields)
 
-    class ModelValidatorGroup:
+    class ModelValidatorGroup:  # type:ignore[no-redef]
         pass
