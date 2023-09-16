@@ -14,9 +14,7 @@ if TYPE_CHECKING:
     from .model_schema import ModelSchema
     from .schema import Schema
 
-__all__ = [
-    "SchemaFactory",
-]
+__all__ = ["SchemaFactory"]
 
 
 class SchemaFactory:
@@ -40,6 +38,7 @@ class SchemaFactory:
         fields: Optional[List[str]] = None,
         exclude: Optional[List[str]] = None,
         skip_registry: bool = False,
+        optional_fields: Optional[Union[str, List[str]]] = None,
     ) -> Union[Type["ModelSchema"], Type["Schema"], None]:
         from .model_schema import ModelSchema
 
@@ -49,7 +48,7 @@ class SchemaFactory:
             raise ConfigError("Only one of 'include' or 'exclude' should be set.")
 
         schema = registry.get_model_schema(model)
-        if schema:
+        if schema and not skip_registry:
             return schema
 
         model_config_kwargs = {
@@ -59,6 +58,7 @@ class SchemaFactory:
             "skip_registry": skip_registry,
             "depth": depth,
             "registry": registry,
+            "optional": optional_fields,
         }
         cls.get_model_config(**model_config_kwargs)  # type: ignore
         new_schema = (
