@@ -1,6 +1,7 @@
 import typing as t
 
 from django.db.models import Model as DjangoModel
+from pydantic.functional_validators import ModelWrapValidatorHandler
 
 from ..pydanticutils import IS_PYDANTIC_V1
 from ..types import DictStrAny
@@ -22,10 +23,26 @@ if not IS_PYDANTIC_V1:
     from pydantic_core.core_schema import ValidationInfo
 
     class BaseMixinsV2(BaseMixins):
-        @model_validator(mode="before")
-        def _run_root_validator(cls, values: t.Any, info: ValidationInfo) -> t.Any:
+        @model_validator(mode="wrap")
+        @classmethod
+        def _run_root_validator(
+            cls,
+            values: t.Any,
+            handler: ModelWrapValidatorHandler[t.Any],
+            info: ValidationInfo,
+        ) -> t.Any:
+            # when extra is "forbid" we need to perform default pydantic valudation
+            # as DjangoGetter does not act as dict and pydantic will not be able to validate it
+            # if cls.model_config.get("extra") == "forbid": #type:ignore[attr-defined]
+            #     handler(values)
+
             values = DjangoGetter(values, cls, info.context)
-            return values
+            return handler(values)
+
+        # @model_validator(mode="before")
+        # def _run_root_validator(cls, values: t.Any, info: ValidationInfo) -> t.Any:
+        #     values = DjangoGetter(values, cls, info.context)
+        #     return values
 
         @classmethod
         def from_orm(cls, obj: t.Any, **options: t.Any) -> BaseModel:
