@@ -434,9 +434,7 @@ class SchemaBaseModel(SchemaMixins, BaseModel):
 
         def json(self, *a, **kw) -> str:
             # Backward compatibility with pydantic 1.x
-            return self.model_dump_json(
-                *a, **kw
-            )  # type:ignore[attr-defined,no-any-return]
+            return self.model_dump_json(*a, **kw)  # type:ignore[attr-defined,no-any-return]
 
         @classmethod
         def json_schema(cls) -> Dict[str, Any]:

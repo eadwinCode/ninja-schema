@@ -16,12 +16,11 @@ install:clean ## Install dependencies
 	pre-commit install -f
 
 lint:fmt ## Run code linters
-	black --check ninja_schema tests
 	ruff check ninja_schema tests
 	mypy  ninja_schema
 
 fmt format:clean ## Run code formatters
-	black ninja_schema tests
+	ruff format ninja_schema tests
 	ruff check --fix ninja_schema tests
 
 test:clean ## Run tests
