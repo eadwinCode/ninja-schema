@@ -420,16 +420,39 @@ class ModelSchemaMetaclass(ModelMetaclass):
 
 
 class SchemaBaseModel(SchemaMixins, BaseModel):
-    pass
+    if not IS_PYDANTIC_V1:
+
+        @classmethod
+        def from_orm(cls, obj, **options) -> BaseModel:
+            return cls.model_validate(  # type:ignore[attr-defined,no-any-return]
+                obj, **options
+            )
+
+        def dict(self, *a: Any, **kw: Any) -> Dict[str, Any]:
+            # Backward compatibility with pydantic 1.x
+            return self.model_dump(*a, **kw)  # type:ignore[attr-defined,no-any-return]
+
+        def json(self, *a, **kw) -> str:
+            # Backward compatibility with pydantic 1.x
+            return self.model_dump_json(
+                *a, **kw
+            )  # type:ignore[attr-defined,no-any-return]
+
+        @classmethod
+        def json_schema(cls) -> Dict[str, Any]:
+            return cls.model_json_schema()
+
+        @classmethod
+        def schema(cls) -> Dict[str, Any]:
+            return cls.json_schema()
 
 
 class ModelSchema(SchemaBaseModel, metaclass=ModelSchemaMetaclass):
-    class Config:
-        if IS_PYDANTIC_V1:
+    if IS_PYDANTIC_V1:
+
+        class Config:
             orm_mode = True
             getter_dict = DjangoGetter
-        else:
-            from_attributes = True
 
-
-# create a class APIModelSchema whose purpose to create ModelSchema during API route creation
+    else:
+        model_config = {"from_attributes": True}

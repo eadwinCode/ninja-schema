@@ -1,5 +1,4 @@
 import typing as t
-import warnings
 
 from django.db.models import Model as DjangoModel
 
@@ -46,11 +45,6 @@ if not IS_PYDANTIC_V1:
 
         @classmethod
         def schema(cls) -> DictStrAny:
-            warnings.warn(
-                ".schema() is deprecated, use .json_schema() instead",
-                DeprecationWarning,
-                stacklevel=2,
-            )
             return cls.json_schema()
 
     BaseMixins = BaseMixinsV2  # type:ignore[misc]
