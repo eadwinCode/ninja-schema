@@ -30,9 +30,9 @@ class SchemaRegister(SchemaRegisterBorg):
     def register_model(self, model: Type[Model], schema: Type["ModelSchema"]) -> None:
         from .model_schema import ModelSchema
 
-        assert is_valid_class(schema) and issubclass(
-            schema, (ModelSchema,)
-        ), "Only Schema can be" 'registered, received "{}"'.format(schema.__name__)
+        assert is_valid_class(schema) and issubclass(schema, (ModelSchema,)), (
+            "Only Schema can be" 'registered, received "{}"'.format(schema.__name__)
+        )
         assert is_valid_django_model(
             model
         ), "Only Django Models are allowed. {}".format(model.__name__)

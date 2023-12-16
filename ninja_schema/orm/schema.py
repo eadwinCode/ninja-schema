@@ -6,9 +6,11 @@ from .mixins import SchemaMixins
 
 
 class Schema(SchemaMixins, BaseModel):
-    class Config:
-        if IS_PYDANTIC_V1:
+    if IS_PYDANTIC_V1:
+
+        class Config:
             orm_mode = True
             getter_dict = DjangoGetter
-        else:
-            from_attributes = True
+
+    else:
+        model_config = {"from_attributes": True}

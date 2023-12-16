@@ -56,7 +56,7 @@ def convert_choice_name(name: str) -> str:
 def get_choices(
     choices: t.Iterable[
         t.Union[t.Tuple[t.Any, t.Any], t.Tuple[str, t.Iterable[t.Tuple[t.Any, t.Any]]]]
-    ]
+    ],
 ) -> t.Iterator[t.Tuple[str, str, str]]:
     for value, help_text in choices:
         if isinstance(help_text, (tuple, list)):
@@ -190,7 +190,9 @@ def construct_relational_field_info(
         if IS_PYDANTIC_V1:
             python_type = t.List[m2m_type]
         else:
-            python_type = t.List[Annotated[inner_type, BeforeValidator(m2m_type.validate)]]  # type: ignore
+            python_type = t.List[
+                Annotated[inner_type, BeforeValidator(m2m_type.validate)]
+            ]  # type: ignore
 
     field_info = PydanticField(
         default=default,

@@ -12,9 +12,7 @@ class TestCustomFields:
     @pytest.mark.skipif(IS_PYDANTIC_V1, reason="requires pydantic == 2.1.x")
     def test_enum_field(self):
         class StudentSchema(ModelSchema):
-            class Config:
-                model = Student
-                include = "__all__"
+            model_config = {"model": Student, "include": "__all__"}
 
         print(json.dumps(StudentSchema.schema(), sort_keys=False, indent=4))
         assert StudentSchema.schema() == {
