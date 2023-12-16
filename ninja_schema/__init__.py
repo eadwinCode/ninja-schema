@@ -1,6 +1,6 @@
 """Django Schema - Builds Pydantic Schemas from Django Models with default field type validations"""
 
-__version__ = "0.13.5"
+__version__ = "0.13.6"
 
 from .orm.factory import SchemaFactory
 from .orm.model_schema import ModelSchema
