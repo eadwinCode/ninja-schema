@@ -89,10 +89,10 @@ class SchemaFactory:
         cls, name: str, model_config_kwargs: typing.Dict, model_type: typing.Type
     ) -> Union[Type["ModelSchema"], Type["Schema"]]:
         model_config = cls.get_model_config(**model_config_kwargs)
-
+        new_schema_result = {}
         new_schema_string = f"""class {name}(model_type):
             class Config(model_config):
                 pass """
 
-        exec(new_schema_string, locals())
-        return locals().get(name)  # type:ignore[return-value]
+        exec(new_schema_string, locals(), new_schema_result)
+        return new_schema_result.get(name)  # type:ignore[return-value]
