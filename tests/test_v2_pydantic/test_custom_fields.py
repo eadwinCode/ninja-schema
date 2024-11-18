@@ -4,12 +4,12 @@ import pytest
 from pydantic import ValidationError
 
 from ninja_schema import ModelSchema
-from ninja_schema.pydanticutils import IS_PYDANTIC_V1
+from ninja_schema.pydanticutils import IS_PYDANTIC_V1, IS_PYDANTIC_V292_OR_GREATER
 from tests.models import Student, StudentEmail
 
 
 class TestCustomFields:
-    @pytest.mark.skipif(IS_PYDANTIC_V1, reason="requires pydantic == 2.1.x")
+    @pytest.mark.skipif(IS_PYDANTIC_V1 and not IS_PYDANTIC_V292_OR_GREATER, reason="requires pydantic == 2.1.x and pydantic < 2.9.2")
     def test_enum_field(self):
         class StudentSchema(ModelSchema):
             model_config = {"model": Student, "include": "__all__"}
@@ -44,6 +44,44 @@ class TestCustomFields:
         assert str(schema_instance.json()) == '{"id":null,"semester":"1"}'
         with pytest.raises(ValidationError):
             StudentSchema(semester="something")
+
+
+    @pytest.mark.skipif(not IS_PYDANTIC_V292_OR_GREATER, reason="requires pydantic == 2.1.x and pydantic < 2.9.2")
+    def test_enum_field_v292_or_greater(self):
+        class StudentSchema(ModelSchema):
+            model_config = {"model": Student, "include": "__all__"}
+
+        print(json.dumps(StudentSchema.schema(), sort_keys=False, indent=4))
+        assert StudentSchema.schema() == {
+            "$defs": {
+                "SemesterEnum": {
+                    "enum": ["1", "2", "3"],
+                    "title": "SemesterEnum",
+                    "type": "string",
+                }
+            },
+            "properties": {
+                "id": {
+                    "anyOf": [{"type": "integer"}, {"type": "null"}],
+                    "default": None,
+                    "description": "",
+                    "title": "Id",
+                },
+                "semester": {
+                    "$ref": "#/$defs/SemesterEnum",
+                    "default": "1",
+                    "description": "",
+                    "title": "Semester",
+                },
+            },
+            "title": "StudentSchema",
+            "type": "object",
+        }
+        schema_instance = StudentSchema(semester="1")
+        assert str(schema_instance.json()) == '{"id":null,"semester":"1"}'
+        with pytest.raises(ValidationError):
+            StudentSchema(semester="something")
+
 
     @pytest.mark.skipif(IS_PYDANTIC_V1, reason="requires pydantic == 2.1.x")
     def test_email_field(self):
