@@ -31,7 +31,7 @@ class TestCustomFields:
                     "title": "Id",
                 },
                 "semester": {
-                    "allOf": [{"$ref": "#/$defs/SemesterEnum"}],
+                    "$ref": "#/$defs/SemesterEnum",
                     "default": "1",
                     "description": "",
                     "title": "Semester",
@@ -67,7 +67,7 @@ class TestCustomFields:
                     "title": "Id",
                 },
                 "semester": {
-                    "allOf": [{"$ref": "#/$defs/SemesterEnum"}],
+                    "$ref": "#/$defs/SemesterEnum",
                     "default": "1",
                     "description": "",
                     "title": "Semester",
