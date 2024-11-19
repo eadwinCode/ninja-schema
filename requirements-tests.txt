@@ -1,0 +1,7 @@
+django-stubs
+mypy == 1.13.0
+pytest
+pytest-asyncio
+pytest-cov
+pytest-django
+ruff == 0.7.4
