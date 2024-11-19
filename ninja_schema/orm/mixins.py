@@ -1,11 +1,17 @@
 import typing as t
 
 from django.db.models import Model as DjangoModel
-from pydantic.functional_validators import ModelWrapValidatorHandler
 
-from ..pydanticutils import IS_PYDANTIC_V1
-from ..types import DictStrAny
-from .getters import DjangoGetter
+from ninja_schema.orm.getters import DjangoGetter
+from ninja_schema.pydanticutils import IS_PYDANTIC_V1
+from ninja_schema.types import DictStrAny
+
+if t.TYPE_CHECKING:
+    from pydantic.functional_validators import ModelWrapValidatorHandler
+
+    ModelWrapValidatorHandlerAny = t.TypeVar(
+        "ModelWrapValidatorHandlerAny", bound=ModelWrapValidatorHandler[t.Any]
+    )
 
 
 class BaseMixins:
@@ -30,7 +36,7 @@ if not IS_PYDANTIC_V1:
         def _run_root_validator(
             cls,
             values: t.Any,
-            handler: ModelWrapValidatorHandler[t.Any],
+            handler: "ModelWrapValidatorHandlerAny",
             info: ValidationInfo,
         ) -> t.Any:
             """
