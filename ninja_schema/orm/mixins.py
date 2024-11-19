@@ -23,6 +23,8 @@ if not IS_PYDANTIC_V1:
     from pydantic_core.core_schema import ValidationInfo
 
     class BaseMixinsV2(BaseMixins):
+        model_config: t.Dict[str, t.Any]
+
         @model_validator(mode="wrap")
         @classmethod
         def _run_root_validator(
@@ -31,10 +33,18 @@ if not IS_PYDANTIC_V1:
             handler: ModelWrapValidatorHandler[t.Any],
             info: ValidationInfo,
         ) -> t.Any:
-            # when extra is "forbid" we need to perform default pydantic valudation
-            # as DjangoGetter does not act as dict and pydantic will not be able to validate it
-            # if cls.model_config.get("extra") == "forbid": #type:ignore[attr-defined]
-            #     handler(values)
+            """
+            If Pydantic intends to validate against the __dict__ of the immediate Schema
+            object, then we need to call `handler` directly on `values` before the conversion
+            to DjangoGetter, since any checks or modifications on DjangoGetter's __dict__
+            will not persist to the original object.
+            """
+            forbids_extra = cls.model_config.get("extra") == "forbid"
+            should_validate_assignment = cls.model_config.get(
+                "validate_assignment", False
+            )
+            if forbids_extra or should_validate_assignment:
+                handler(values)
 
             values = DjangoGetter(values, cls, info.context)
             return handler(values)
