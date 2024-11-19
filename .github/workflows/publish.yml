@@ -17,9 +17,14 @@ jobs:
       - name: Install Flit
         run: pip install flit
       - name: Install Dependencies
-        run: flit install --symlink
+        run: make install
+      - name: Install build dependencies
+        run: pip install build
+      - name: Build distribution
+        run: python -m build
       - name: Publish
-        env:
-          FLIT_USERNAME: ${{ secrets.FLIT_USERNAME }}
-          FLIT_PASSWORD: ${{ secrets.FLIT_PASSWORD }}
-        run: flit publish
+        uses: pypa/gh-action-pypi-publish@v1.11.0
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+      - name: Deploy Documentation
+        run: make doc-deploy
