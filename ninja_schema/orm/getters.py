@@ -4,7 +4,7 @@ import pydantic
 from django.db.models import Manager, QuerySet
 from django.db.models.fields.files import FieldFile
 
-from ..pydanticutils import IS_PYDANTIC_V1
+from ninja_schema.pydanticutils import IS_PYDANTIC_V1
 
 __all__ = [
     "DjangoGetter",

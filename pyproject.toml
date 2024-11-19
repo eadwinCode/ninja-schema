@@ -57,7 +57,7 @@ test = [
     "pytest-cov",
     "pytest-django",
     "pytest-asyncio",
-    "mypy == 1.11.1",
+    "mypy == 1.13.0",
     "ruff == 0.7.4",
     "django-stubs",
 ]

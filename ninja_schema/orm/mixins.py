@@ -2,9 +2,16 @@ import typing as t
 
 from django.db.models import Model as DjangoModel
 
-from ..pydanticutils import IS_PYDANTIC_V1
-from ..types import DictStrAny
-from .getters import DjangoGetter
+from ninja_schema.orm.getters import DjangoGetter
+from ninja_schema.pydanticutils import IS_PYDANTIC_V1
+from ninja_schema.types import DictStrAny
+
+if t.TYPE_CHECKING:
+    from pydantic.functional_validators import ModelWrapValidatorHandler
+
+    ModelWrapValidatorHandlerAny = t.TypeVar(
+        "ModelWrapValidatorHandlerAny", bound=ModelWrapValidatorHandler[t.Any]
+    )
 
 
 class BaseMixins:
@@ -22,10 +29,36 @@ if not IS_PYDANTIC_V1:
     from pydantic_core.core_schema import ValidationInfo
 
     class BaseMixinsV2(BaseMixins):
-        @model_validator(mode="before")
-        def _run_root_validator(cls, values: t.Any, info: ValidationInfo) -> t.Any:
+        model_config: t.Dict[str, t.Any]
+
+        @model_validator(mode="wrap")
+        @classmethod
+        def _run_root_validator(
+            cls,
+            values: t.Any,
+            handler: "ModelWrapValidatorHandlerAny",
+            info: ValidationInfo,
+        ) -> t.Any:
+            """
+            If Pydantic intends to validate against the __dict__ of the immediate Schema
+            object, then we need to call `handler` directly on `values` before the conversion
+            to DjangoGetter, since any checks or modifications on DjangoGetter's __dict__
+            will not persist to the original object.
+            """
+            forbids_extra = cls.model_config.get("extra") == "forbid"
+            should_validate_assignment = cls.model_config.get(
+                "validate_assignment", False
+            )
+            if forbids_extra or should_validate_assignment:
+                handler(values)
+
             values = DjangoGetter(values, cls, info.context)
-            return values
+            return handler(values)
+
+        # @model_validator(mode="before")
+        # def _run_root_validator(cls, values: t.Any, info: ValidationInfo) -> t.Any:
+        #     values = DjangoGetter(values, cls, info.context)
+        #     return values
 
         @classmethod
         def from_orm(cls, obj: t.Any, **options: t.Any) -> BaseModel:
