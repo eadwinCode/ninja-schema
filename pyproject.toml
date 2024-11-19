@@ -26,6 +26,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3 :: Only",
     "Framework :: Django",
     "Framework :: Django :: 3.0",
@@ -56,8 +57,8 @@ test = [
     "pytest-cov",
     "pytest-django",
     "pytest-asyncio",
-    "mypy == 1.7.1",
-    "ruff ==0.1.7",
+    "mypy == 1.11.1",
+    "ruff == 0.7.4",
     "django-stubs",
 ]
 dev = [

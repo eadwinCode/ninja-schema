@@ -3,10 +3,10 @@ from typing import TYPE_CHECKING, List, Optional, Type, Union, cast
 
 from django.db.models import Model
 
+from ninja_schema.errors import ConfigError
 from ninja_schema.pydanticutils import IS_PYDANTIC_V1
+from ninja_schema.types import DictStrAny
 
-from ..errors import ConfigError
-from ..types import DictStrAny
 from .schema_registry import SchemaRegister
 from .schema_registry import registry as schema_registry
 
@@ -89,7 +89,7 @@ class SchemaFactory:
         cls, name: str, model_config_kwargs: typing.Dict, model_type: typing.Type
     ) -> Union[Type["ModelSchema"], Type["Schema"]]:
         model_config = cls.get_model_config(**model_config_kwargs)
-        new_schema_result = {}
+        new_schema_result = {}  # type:ignore[var-annotated]
         new_schema_string = f"""class {name}(model_type):
             class Config(model_config):
                 pass """
