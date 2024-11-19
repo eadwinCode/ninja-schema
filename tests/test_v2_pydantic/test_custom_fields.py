@@ -4,12 +4,12 @@ import pytest
 from pydantic import ValidationError
 
 from ninja_schema import ModelSchema
-from ninja_schema.pydanticutils import IS_PYDANTIC_V1, IS_PYDANTIC_V292_OR_GREATER
+from ninja_schema.pydanticutils import IS_PYDANTIC_V1
 from tests.models import Student, StudentEmail
 
 
 class TestCustomFields:
-    @pytest.mark.skipif(IS_PYDANTIC_V1 and not IS_PYDANTIC_V292_OR_GREATER, reason="requires pydantic == 2.1.x and pydantic < 2.9.2")
+    @pytest.mark.skipif(IS_PYDANTIC_V1, reason="requires pydantic == 2.1.x")
     def test_enum_field(self):
         class StudentSchema(ModelSchema):
             model_config = {"model": Student, "include": "__all__"}
@@ -45,9 +45,8 @@ class TestCustomFields:
         with pytest.raises(ValidationError):
             StudentSchema(semester="something")
 
-
-    @pytest.mark.skipif(not IS_PYDANTIC_V292_OR_GREATER, reason="requires pydantic == 2.1.x and pydantic < 2.9.2")
-    def test_enum_field_v292_or_greater(self):
+    @pytest.mark.skipif(IS_PYDANTIC_V1, reason="requires pydantic == 2.1.x")
+    def test_enum_field_or_greater(self):
         class StudentSchema(ModelSchema):
             model_config = {"model": Student, "include": "__all__"}
 
@@ -68,7 +67,7 @@ class TestCustomFields:
                     "title": "Id",
                 },
                 "semester": {
-                    "$ref": "#/$defs/SemesterEnum",
+                    "allOf": [{"$ref": "#/$defs/SemesterEnum"}],
                     "default": "1",
                     "description": "",
                     "title": "Semester",
@@ -81,7 +80,6 @@ class TestCustomFields:
         assert str(schema_instance.json()) == '{"id":null,"semester":"1"}'
         with pytest.raises(ValidationError):
             StudentSchema(semester="something")
-
 
     @pytest.mark.skipif(IS_PYDANTIC_V1, reason="requires pydantic == 2.1.x")
     def test_email_field(self):

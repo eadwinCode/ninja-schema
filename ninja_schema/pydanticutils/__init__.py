@@ -15,7 +15,6 @@ logger = logging.getLogger()
 
 PYDANTIC_VERSION = list(map(int, _PYDANTIC_VERSION.split(".")))[:2]
 IS_PYDANTIC_V1 = PYDANTIC_VERSION[0] == 1
-IS_PYDANTIC_V292_OR_GREATER = PYDANTIC_VERSION[0] >= 2 and PYDANTIC_VERSION[1] >= 9
 
 
 def is_valid_field_name(name: str) -> bool:
