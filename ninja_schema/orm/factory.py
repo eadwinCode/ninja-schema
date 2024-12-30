@@ -39,6 +39,7 @@ class SchemaFactory:
         exclude: Optional[List[str]] = None,
         skip_registry: bool = False,
         optional_fields: Optional[Union[str, List[str]]] = None,
+        **model_config_options: DictStrAny,
     ) -> Union[Type["ModelSchema"], Type["Schema"], None]:
         from .model_schema import ModelSchema
 
@@ -59,6 +60,7 @@ class SchemaFactory:
             "depth": depth,
             "registry": registry,
             "optional": optional_fields,
+            **model_config_options,
         }
         cls.get_model_config(**model_config_kwargs)  # type: ignore
         new_schema = (
