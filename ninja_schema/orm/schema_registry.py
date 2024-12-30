@@ -6,7 +6,7 @@ from .schema import Schema
 from .utils.utils import is_valid_class, is_valid_django_model
 
 if TYPE_CHECKING:
-    from .model_schema import ModelSchema
+    from ninja_schema.orm.model_schema import ModelSchema
 
 __all__ = ["SchemaRegister", "registry"]
 
@@ -28,7 +28,7 @@ class SchemaRegister(SchemaRegisterBorg):
             self._shared_state.update(schemas={}, fields={})
 
     def register_model(self, model: Type[Model], schema: Type["ModelSchema"]) -> None:
-        from .model_schema import ModelSchema
+        from ninja_schema.orm.model_schema import ModelSchema
 
         assert is_valid_class(schema) and issubclass(schema, (ModelSchema,)), (
             "Only Schema can be" 'registered, received "{}"'.format(schema.__name__)

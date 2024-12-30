@@ -12,14 +12,14 @@ from django.db.models.fields import Field
 from django.utils.encoding import force_str
 from pydantic import AnyUrl, EmailStr, IPvAnyAddress, Json
 from pydantic.fields import Field as PydanticField
-from typing_extensions import Annotated
+from typing_extensions import Annotated  # F401
 
-from ...compat import ArrayField, HStoreField, JSONField, RangeField
-from ...pydanticutils import IS_PYDANTIC_V1
-from ...types import DictStrAny
-from ..factory import SchemaFactory
-from ..schema_registry import SchemaRegister
-from ..schema_registry import registry as global_registry
+from ninja_schema.compat import ArrayField, HStoreField, JSONField, RangeField
+from ninja_schema.orm.factory import SchemaFactory
+from ninja_schema.orm.schema_registry import SchemaRegister
+from ninja_schema.orm.schema_registry import registry as global_registry
+from ninja_schema.pydanticutils import IS_PYDANTIC_V1
+from ninja_schema.types import DictStrAny
 
 try:
     from pydantic.fields import Undefined
