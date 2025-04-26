@@ -33,6 +33,7 @@ class TestCustomFields:
                     "title": "SemesterEnum",
                     "description": "An enumeration.",
                     "enum": ["1", "2", "3"],
+                    "type": "string"
                 }
             },
         }

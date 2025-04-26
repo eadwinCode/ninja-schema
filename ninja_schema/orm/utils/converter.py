@@ -225,6 +225,7 @@ def construct_field_info(
             f"{field.name.title().replace('_', '')}Enum",
             named_choices,
             module=__module__,
+            type=type(named_choices[0][1]),
         )
         is_custom_type = True
 
