@@ -320,11 +320,12 @@ class ModelSchemaMetaclass(ModelMetaclass):
         name: str,
         bases: tuple,
         namespace: dict,
+        **kwargs: Any,
     ):
         if bases == (SchemaBaseModel,) or not namespace.get(
             "Config", namespace.get("model_config")
         ):
-            return super().__new__(mcs, name, bases, namespace)
+            return super().__new__(mcs, name, bases, namespace, **kwargs)
 
         config = namespace.get("Config")
         if not config:
@@ -407,16 +408,20 @@ class ModelSchemaMetaclass(ModelMetaclass):
 
                 field_values[field_name] = (python_type, pydantic_field)
             if IS_PYDANTIC_V1:
-                cls = super().__new__(mcs, name, bases, namespace)
+                cls = super().__new__(mcs, name, bases, namespace, **kwargs)
                 return update_class_missing_fields(
                     cls,
                     list(bases),
                     compute_field_annotations(namespace, **field_values),
                 )
             return super().__new__(
-                mcs, name, bases, compute_field_annotations(namespace, **field_values)
+                mcs,
+                name,
+                bases,
+                compute_field_annotations(namespace, **field_values),
+                **kwargs,
             )
-        return super().__new__(mcs, name, bases, namespace)
+        return super().__new__(mcs, name, bases, namespace, **kwargs)
 
 
 class SchemaBaseModel(SchemaMixins, BaseModel):
