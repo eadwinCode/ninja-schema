@@ -16,7 +16,7 @@ Starting version `0.13.4`, Ninja schema will support both v1 and v2 of pydantic 
 Python >= 3.8
 django >= 3
 pydantic >= 1.6
-
+ 
 **Key features:**
 - **Custom Field Support**: Ninja Schema converts django model to native pydantic types which gives you quick field validation out of the box. eg Enums, email, IPAddress, URLs, JSON, etc
 - **Field Validator**: Fields can be validated with **model_validator** just like pydantic **[validator](https://pydantic-docs.helpmanual.io/usage/validators/)** or **[root_validator](https://pydantic-docs.helpmanual.io/usage/validators/)**. 
