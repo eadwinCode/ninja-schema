@@ -514,3 +514,47 @@ class TestModelSchema:
 
         event = EventWithNewModelConfig(start_date="2021-06-12", title="PyConf 2021")
         assert "value cleaned" in event.title
+
+    @pytest.mark.django_db
+    @pytest.mark.skipif(IS_PYDANTIC_V1, reason="requires pydantic == 2.1.x")
+    def test_schema_with_mixin_generic_class(self):
+        """
+        Test that a schema with a generic mixin class works correctly.
+        """
+
+        import datetime
+        import typing as t
+
+        from django.db.models import Model as DjangoModel
+
+        T = t.TypeVar("T", bound=DjangoModel)
+
+        class GenericMixin(t.Generic[T]):
+            def save(self, instance: T | None = None) -> T:
+                """
+                Save the model instance and return it.
+                """
+                if instance:
+                    self.apply_to_model(instance, **self.dict())
+                    instance.save()
+                    return instance
+
+                instance = self.Config.model(**self.dict())
+                instance.save()
+                return instance
+        class BaseModelSchema(ModelSchema, GenericMixin[T]):
+            ...
+        class EventGenericSchema(BaseModelSchema[Event]):
+            class Config:
+                model = Event
+                include = (
+                    "title",
+                )
+
+        event = EventGenericSchema(title="PyConf 2021")
+        assert event.title == "PyConf 2021"
+
+        instance_event = event.save()
+        assert isinstance(instance_event, Event)
+        assert instance_event.title == "PyConf 2021"
+        
