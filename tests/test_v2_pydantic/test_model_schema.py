@@ -1,12 +1,16 @@
 import json
+import typing as t
 
 import pydantic
 import pytest
+from django.db.models import Model as DjangoModel
 
 from ninja_schema import ModelSchema, SchemaFactory, model_validator
 from ninja_schema.errors import ConfigError
 from ninja_schema.pydanticutils import IS_PYDANTIC_V1
 from tests.models import Event
+
+T = t.TypeVar("T", bound=DjangoModel)
 
 
 class TestModelSchema:
@@ -522,15 +526,8 @@ class TestModelSchema:
         Test that a schema with a generic mixin class works correctly.
         """
 
-        import datetime
-        import typing as t
-
-        from django.db.models import Model as DjangoModel
-
-        T = t.TypeVar("T", bound=DjangoModel)
-
         class GenericMixin(t.Generic[T]):
-            def save(self, instance: T | None = None) -> T:
+            def save(self, instance: t.Optional[T] = None) -> T:
                 """
                 Save the model instance and return it.
                 """
@@ -542,14 +539,13 @@ class TestModelSchema:
                 instance = self.Config.model(**self.dict())
                 instance.save()
                 return instance
-        class BaseModelSchema(ModelSchema, GenericMixin[T]):
-            ...
+
+        class BaseModelSchema(ModelSchema, GenericMixin[T]): ...
+
         class EventGenericSchema(BaseModelSchema[Event]):
             class Config:
                 model = Event
-                include = (
-                    "title",
-                )
+                include = ("title",)
 
         event = EventGenericSchema(title="PyConf 2021")
         assert event.title == "PyConf 2021"
@@ -557,4 +553,3 @@ class TestModelSchema:
         instance_event = event.save()
         assert isinstance(instance_event, Event)
         assert instance_event.title == "PyConf 2021"
-        

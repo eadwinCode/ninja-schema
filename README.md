@@ -63,7 +63,6 @@ class CreateUserSchema(ModelSchema):
 ##  `from_orm(cls, obj: Any)`
 You can generate a schema instance from your django model instance
 ```Python
-from typings import Optional
 from django.contrib.auth import get_user_model
 from ninja_schema import ModelSchema, model_validator
 
@@ -90,15 +89,14 @@ print(schema.json(indent=2)
 }
 ```
 
-## `apply(self, model_instance, **kwargs)`
+## `apply_to_model(self, model_instance, **kwargs)`
 You can transfer data from your ModelSchema to Django Model instance using the `apply` function.
-The `apply` function uses Pydantic model `.dict` function, `dict` function filtering that can be passed as `kwargs` to the `.apply` function.
+The `apply_to_model` function uses Pydantic model `.dict` function, `dict` function filtering that can be passed as `kwargs` to the `.apply` function.
 
 For more info, visit [Pydantic model export](https://pydantic-docs.helpmanual.io/usage/exporting_models/)
 ```Python
-from typings import Optional
 from django.contrib.auth import get_user_model
-from ninja_schema import ModelSchema, model_validator
+from ninja_schema import ModelSchema
 
 UserModel = get_user_model()
 new_user = UserModel.objects.create_user(username='eadwin', email='eadwin@example.com', password='password')
@@ -111,7 +109,7 @@ class UpdateUserSchema(ModelSchema):
         optional = ['username']  # `username` is now optional
 
 schema = UpdateUserSchema(first_name='Emeka', last_name='Okoro')
-schema.apply(new_user, exclude_none=True)
+schema.apply_to_model(new_user, exclude_none=True)
 
 assert new_user.first_name == 'Emeka' # True
 assert new_user.username == 'eadwin' # True
@@ -269,4 +267,3 @@ print(UserSchema.schema())
     }
 }
 ```
-

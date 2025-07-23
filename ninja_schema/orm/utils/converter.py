@@ -39,9 +39,9 @@ COMPILED_NAME_PATTERN = re.compile(NAME_PATTERN)
 
 def assert_valid_name(name: str) -> None:
     """Helper to assert that provided names are valid."""
-    assert COMPILED_NAME_PATTERN.match(
-        name
-    ), 'Names must match /{}/ but "{}" does not.'.format(NAME_PATTERN, name)
+    assert COMPILED_NAME_PATTERN.match(name), (
+        'Names must match /{}/ but "{}" does not.'.format(NAME_PATTERN, name)
+    )
 
 
 def convert_choice_name(name: str) -> str:
