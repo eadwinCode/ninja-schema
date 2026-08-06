@@ -10,7 +10,7 @@ import django
 from django.db import models
 from django.db.models.fields import Field
 from django.utils.encoding import force_str
-from pydantic import AnyUrl, EmailStr, IPvAnyAddress, Json
+from pydantic import AnyUrl, EmailStr, IPvAnyAddress, JsonValue
 from pydantic.fields import Field as PydanticField
 from typing_extensions import Annotated  # F401
 
@@ -452,9 +452,7 @@ def convert_postgres_array_to_list(
 def convert_postgres_field_to_string(
     field: Field, **kwargs: DictStrAny
 ) -> t.Tuple[t.Type, PydanticField]:
-    python_type = Json
-    if field.null:
-        python_type = t.Optional[Json]
+    python_type = JsonValue
     return construct_field_info(python_type, field)
 
 
@@ -476,7 +474,5 @@ if django.VERSION >= (3, 1):
     def convert_field_to_json_string(
         field: Field, **kwargs: DictStrAny
     ) -> t.Tuple[t.Type, PydanticField]:
-        python_type = Json
-        if field.null:
-            python_type = t.Optional[Json]
+        python_type = JsonValue
         return construct_field_info(python_type, field)

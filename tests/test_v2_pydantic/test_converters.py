@@ -5,7 +5,6 @@ import django
 import pytest
 from django.db import models
 from django.db.models import Manager
-from pydantic import ValidationError
 
 from ninja_schema import ModelSchema
 from ninja_schema.pydanticutils import IS_PYDANTIC_V1
@@ -303,6 +302,7 @@ def test_django_31_fields():
 
     print(ModelNewFieldsSchema.schema())
     assert ModelNewFieldsSchema.schema() == {
+        "$defs": {"JsonValue": {}},
         "properties": {
             "id": {
                 "anyOf": [{"type": "integer"}, {"type": "null"}],
@@ -311,11 +311,9 @@ def test_django_31_fields():
                 "title": "Id",
             },
             "jsonfield": {
-                "contentMediaType": "application/json",
-                "contentSchema": {},
+                "$ref": "#/$defs/JsonValue",
                 "description": "",
                 "title": "Jsonfield",
-                "type": "string",
             },
             "positivebigintegerfield": {
                 "description": "",
@@ -328,11 +326,8 @@ def test_django_31_fields():
         "type": "object",
     }
 
-    with pytest.raises(ValidationError):
-        ModelNewFieldsSchema(id=1, jsonfield={"any": "data"}, positivebigintegerfield=1)
-
     obj = ModelNewFieldsSchema(
-        id=1, jsonfield=json.dumps({"any": "data"}), positivebigintegerfield=1
+        id=1, jsonfield={"any": "data"}, positivebigintegerfield=1
     )
     assert obj.dict() == {
         "id": 1,
